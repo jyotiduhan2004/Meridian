@@ -4,7 +4,7 @@ import { LLMProvider, LLMRequest } from "./types";
 // Activated when LLM_PROVIDER=gemini and GEMINI_API_KEY is set.
 export function geminiProvider(): LLMProvider {
   const key = process.env.GEMINI_API_KEY ?? "";
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
   return {
     name: "gemini",

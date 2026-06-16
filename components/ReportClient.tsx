@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { personaFor } from "@/lib/personas";
+import { trackEvent } from "@/lib/track";
 import type { SkillEnvelope } from "@/lib/schema";
 
 type Verdict = {
@@ -88,14 +89,26 @@ export default function ReportClient({ id }: { id: string }) {
       await pool(pending, 6, async (sid) => {
         try {
           const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
-          if (res.ok) setSkill(await res.json());
+          if (res.ok) {
+            const env: SkillEnvelope = await res.json();
+            setSkill(env);
+            trackEvent("skill_completed", {
+              skill: env.skillId,
+              status: env.status,
+              score: env.score ?? -1,
+            });
+          }
         } catch {
           /* leave as pending; the dashboard tolerates it */
         }
       });
 
       const sv = await fetch(`/api/run/${id}/synthesize`, { method: "POST" });
-      if (sv.ok) setVerdict(await sv.json());
+      if (sv.ok) {
+        const v: Verdict = await sv.json();
+        setVerdict(v);
+        trackEvent("verdict_synthesized", { score: v.meridianScore, verdict: v.verdict });
+      }
     })();
   }, [id, setSkill]);
 
@@ -268,6 +281,8 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
     setBusy(true);
     try {
       const round = turns.filter((t) => t.who === "investor").length;
+      if (answerText) trackEvent("founder_response_submitted", { round });
+      else if (round === 0) trackEvent("debate_started", {});
       const r = await fetch(`/api/run/${runId}/investor`, {
         method: "POST",
         headers: { "content-type": "application/json" },

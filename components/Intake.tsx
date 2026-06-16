@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/track";
 
 type Extracted = { url?: string; repo?: string; description?: string };
 type Mode = "product" | "idea";
@@ -24,6 +25,12 @@ export default function Intake() {
       });
       const d = await r.json();
       setEx({ url: d.url ?? "", repo: d.repo ?? "", description: d.description ?? "" });
+      trackEvent("product_submitted", {
+        mode,
+        has_url: !!d.url,
+        has_repo: !!d.repo,
+        has_description: !!d.description,
+      });
     } finally {
       setBusy(false);
     }
@@ -31,6 +38,7 @@ export default function Intake() {
 
   async function run() {
     setBusy(true);
+    trackEvent("analysis_started", { mode });
     const inputs =
       mode === "idea"
         ? { description: ex?.description }
