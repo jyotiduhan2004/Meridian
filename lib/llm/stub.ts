@@ -130,6 +130,174 @@ const CANNED: Record<string, Analysis> = {
     ],
     note: "directional estimate",
   },
+  "scan-owasp": {
+    score: 7,
+    stance: "ship",
+    rubricBreakdown: [
+      { dimension: "No critical/high vulns", max: 4, earned: 3 },
+      { dimension: "Secure headers + CORS", max: 3, earned: 2 },
+      { dimension: "HTTPS + crypto hygiene", max: 3, earned: 2 },
+    ],
+    findings: [
+      { title: "Missing Content-Security-Policy header", severity: "medium", evidence: "response headers", fix: "Add a CSP header", effort: "easy" },
+    ],
+  },
+  "detect-secrets": {
+    score: 3,
+    stance: "block",
+    rubricBreakdown: [
+      { dimension: "No exposed secrets", max: 6, earned: 1 },
+      { dimension: "No hardcoded credentials", max: 4, earned: 2 },
+    ],
+    findings: [
+      { title: "AWS access key committed to the repo", severity: "critical", evidence: "src/config.ts:12", fix: "Rotate the key and purge it from git history", effort: "easy" },
+    ],
+  },
+  "check-deps": {
+    score: 6,
+    stance: "fix-first",
+    rubricBreakdown: [
+      { dimension: "No high/critical CVEs", max: 6, earned: 3 },
+      { dimension: "Maintained, current deps", max: 4, earned: 3 },
+    ],
+    findings: [
+      { title: "Outdated dependency with a known high-severity advisory", severity: "high", evidence: "lockfile", fix: "Upgrade to the patched version", effort: "medium" },
+    ],
+  },
+  "audit-api-auth": {
+    score: 7,
+    stance: "ship",
+    rubricBreakdown: [
+      { dimension: "Sensitive endpoints protected", max: 6, earned: 5 },
+      { dimension: "No data leakage", max: 4, earned: 2 },
+    ],
+    findings: [
+      { title: "Error responses leak a stack trace", severity: "medium", evidence: "GET /api/items (500)", fix: "Return a generic error; log details server-side", effort: "easy" },
+    ],
+  },
+  "audit-performance": {
+    score: 6,
+    stance: "fix-first",
+    rubricBreakdown: [
+      { dimension: "LCP / FCP", max: 2, earned: 1 },
+      { dimension: "INP / CLS", max: 2, earned: 1 },
+      { dimension: "Bundle / JS weight", max: 2, earned: 1 },
+      { dimension: "Image optimization", max: 2, earned: 1 },
+      { dimension: "Caching / loading", max: 2, earned: 2 },
+    ],
+    findings: [
+      { title: "Large unoptimized hero image hurts LCP", severity: "high", evidence: "hero.png ~1.4MB", fix: "Serve WebP/AVIF at the right size and preload it", effort: "medium" },
+    ],
+  },
+  "estimate-scalability": {
+    score: 6,
+    stance: "n/a",
+    note: "directional estimate",
+    rubricBreakdown: [
+      { dimension: "Architecture pattern", max: 2, earned: 1 },
+      { dimension: "No obvious bottlenecks", max: 3, earned: 1 },
+      { dimension: "Caching strategy", max: 2, earned: 1 },
+      { dimension: "DB optimization", max: 3, earned: 3 },
+    ],
+    findings: [
+      { title: "Likely fine to low-thousands of users; first bottleneck is an N+1 on the feed query", severity: "medium", evidence: "feed loads each item's author separately", fix: "Batch the query or add an index", effort: "medium" },
+    ],
+  },
+  "check-launch-readiness": {
+    score: 5,
+    stance: "fix-first",
+    rubricBreakdown: [
+      { dimension: "Analytics", max: 2, earned: 0 },
+      { dimension: "Error tracking", max: 1, earned: 0 },
+      { dimension: "Legal pages + contact", max: 2, earned: 1 },
+      { dimension: "Social / OG", max: 1, earned: 1 },
+      { dimension: "Polish", max: 4, earned: 3 },
+    ],
+    findings: [
+      { title: "No product analytics installed", severity: "medium", evidence: "no tracker found on the page", fix: "Install analytics to learn from real usage", effort: "easy" },
+      { title: "No error tracking", severity: "medium", evidence: "no Sentry/equivalent", fix: "Add error tracking before launch", effort: "easy" },
+    ],
+  },
+  "review-copy": {
+    score: 7,
+    stance: "ship",
+    rubricBreakdown: [
+      { dimension: "Value-prop clarity", max: 3, earned: 2 },
+      { dimension: "CTA effectiveness", max: 2, earned: 1 },
+      { dimension: "Jargon-free", max: 2, earned: 1 },
+      { dimension: "Tone consistency", max: 1, earned: 1 },
+      { dimension: "Emotional hook", max: 2, earned: 2 },
+    ],
+    findings: [
+      { title: "Headline leans on jargon", severity: "medium", evidence: "the hero headline", fix: "Say plainly what the product does and for whom", effort: "easy" },
+    ],
+  },
+  "check-api-health": {
+    score: 7,
+    stance: "ship",
+    rubricBreakdown: [
+      { dimension: "Zero broken links/routes", max: 3, earned: 2 },
+      { dimension: "Response times", max: 3, earned: 2 },
+      { dimension: "Proper error handling", max: 2, earned: 2 },
+      { dimension: "No orphan/mixed routes", max: 2, earned: 1 },
+    ],
+    findings: [
+      { title: "One broken link in the footer", severity: "low", evidence: "/pricing-old returns 404", fix: "Update or remove the link", effort: "easy" },
+    ],
+  },
+  "assess-pricing": {
+    score: 6,
+    stance: "n/a",
+    rubricBreakdown: [
+      { dimension: "Tier clarity", max: 2, earned: 1 },
+      { dimension: "Pricing psychology", max: 2, earned: 1 },
+      { dimension: "Market alignment", max: 3, earned: 2 },
+      { dimension: "Value communication", max: 3, earned: 2 },
+    ],
+    findings: [
+      { title: "Value metric punishes success", severity: "medium", evidence: "per-API-call pricing", fix: "Price on a metric that scales with the customer's value, not their usage cost", effort: "medium" },
+    ],
+  },
+  "check-discoverability": {
+    score: 5,
+    stance: "fix-first",
+    rubricBreakdown: [
+      { dimension: "Meta tags complete", max: 2, earned: 0 },
+      { dimension: "OG / social preview", max: 2, earned: 0 },
+      { dimension: "Heading structure", max: 2, earned: 2 },
+      { dimension: "Sitemap / robots / canonical", max: 2, earned: 2 },
+      { dimension: "Structured data", max: 2, earned: 1 },
+    ],
+    findings: [
+      { title: "Missing meta description and Open Graph tags", severity: "high", evidence: "<head> has no description / OG tags", fix: "Add a meta description + OG/Twitter tags so search and shares render", effort: "easy" },
+    ],
+  },
+  "assess-business-model": {
+    score: 7,
+    stance: "n/a",
+    rubricBreakdown: [
+      { dimension: "Revenue model clarity", max: 2, earned: 2 },
+      { dimension: "Unit economics viable", max: 3, earned: 2 },
+      { dimension: "Sustainability", max: 3, earned: 2 },
+      { dimension: "Risk awareness", max: 2, earned: 1 },
+    ],
+    findings: [
+      { title: "Customer-acquisition path is unclear", severity: "medium", evidence: "no stated channel", fix: "Name the first affordable channel and a rough CAC range", effort: "medium" },
+    ],
+  },
+  "scope-mvp": {
+    score: 7,
+    stance: "n/a",
+    rubricBreakdown: [
+      { dimension: "Core identified", max: 3, earned: 3 },
+      { dimension: "Cut list", max: 3, earned: 2 },
+      { dimension: "Sequencing", max: 2, earned: 1 },
+      { dimension: "Risk-first focus", max: 2, earned: 1 },
+    ],
+    findings: [
+      { title: "v1 scope is broad", severity: "low", evidence: "5 features described as must-have", fix: "Ship the one core job first; defer the other four", effort: "medium" },
+    ],
+  },
 };
 
 const FALLBACK: Analysis = {
