@@ -86,7 +86,7 @@ export default function ReportClient({ id }: { id: string }) {
         .filter((s) => s.status === "pending")
         .map((s) => s.skillId);
 
-      await pool(pending, 6, async (sid) => {
+      await pool(pending, 4, async (sid) => {
         try {
           const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
           if (res.ok) {
