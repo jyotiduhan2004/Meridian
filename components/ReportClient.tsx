@@ -99,7 +99,7 @@ export default function ReportClient({ id }: { id: string }) {
         .filter((s) => s.status === "pending")
         .map((s) => s.skillId);
 
-      await pool(pending, 4, async (sid) => {
+      await pool(pending, 2, async (sid) => {
         try {
           const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
           if (res.ok) {
@@ -513,7 +513,7 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
       const r = await fetch(`/api/run/${runId}/investor`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ round, answer: answerText ?? "" }),
+        body: JSON.stringify({ answer: answerText ?? "", history: turns }),
       });
       const d = await r.json();
       setTurns((t) => [

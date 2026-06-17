@@ -31,7 +31,7 @@ export function geminiProvider(): LLMProvider {
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
       let lastErr = "";
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 4; attempt++) {
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -41,10 +41,16 @@ export function geminiProvider(): LLMProvider {
           const data = await res.json();
           return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
         }
-        lastErr = `Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`;
-        // Back off and retry on transient rate-limit / overload.
+        const errText = await res.text();
+        lastErr = `Gemini ${res.status}: ${errText.slice(0, 200)}`;
+        // Back off and retry on transient rate-limit / overload. Honor the
+        // server-suggested retryDelay when present, capped so a skill can't hang.
         if (res.status === 429 || res.status === 503) {
-          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          const suggested = errText.match(/"retryDelay":\s*"(\d+)s"/);
+          const wait = suggested
+            ? Math.min(Number(suggested[1]) * 1000 + 500, 18000)
+            : Math.min(1500 * 2 ** attempt, 12000);
+          await new Promise((r) => setTimeout(r, wait));
           continue;
         }
         throw new Error(lastErr);
