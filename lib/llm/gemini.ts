@@ -21,6 +21,9 @@ export function geminiProvider(): LLMProvider {
         contents: [{ role: "user", parts }],
         generationConfig: {
           temperature: 0.4,
+          // Disable extended "thinking": structured scoring doesn't need it, and
+          // it cuts ~2k tokens + several seconds per call (and the free-tier 429s).
+          thinkingConfig: { thinkingBudget: 0 },
           ...(req.json ? { responseMimeType: "application/json" } : {}),
         },
         ...(req.system ? { systemInstruction: { parts: [{ text: req.system }] } } : {}),

@@ -1,8 +1,11 @@
 import { LLMImage } from "@/lib/llm/types";
+import { readGithubRepo } from "./github";
+import { fetchRealPage } from "./page";
+import { tavilySearch } from "./search";
 
 // Shared tool layer. Skills request actions; this layer performs them.
-// Real adapters (Browserless / Tavily / GitHub) are wired in when keys are present;
-// until then a stub keeps the loop runnable.
+// GitHub repo read + page fetch work with no key; web search needs TAVILY_API_KEY;
+// live screenshots need BROWSERLESS_TOKEN. A stub keeps the loop runnable offline.
 
 export type SearchResult = { title: string; url: string; snippet: string };
 export type PageFetch = { status: number; html: string; text: string };
@@ -36,7 +39,52 @@ const stubTools: Tools = {
   },
 };
 
+// Memoize evidence fetches by URL/query for the process lifetime, caching the
+// Promise so the skills that fan out concurrently share a single fetch instead
+// of each hammering GitHub/Tavily. (Persisted to Supabase at deploy time.)
+const g = globalThis as unknown as {
+  __meridianEvidence?: {
+    repo: Map<string, Promise<RepoRead>>;
+    page: Map<string, Promise<PageFetch>>;
+    search: Map<string, Promise<SearchResult[]>>;
+  };
+};
+const cache =
+  g.__meridianEvidence ??
+  (g.__meridianEvidence = { repo: new Map(), page: new Map(), search: new Map() });
+
+function memo<T>(map: Map<string, Promise<T>>, key: string, fn: () => Promise<T>): Promise<T> {
+  const hit = map.get(key);
+  if (hit) return hit;
+  const p = fn().catch((e) => {
+    map.delete(key); // don't cache a hard failure forever
+    throw e;
+  });
+  map.set(key, p);
+  return p;
+}
+
+const realTools: Tools = {
+  // Live screenshots need Browserless; until then fall back to fetched page text.
+  async screenshot(url) {
+    const page = await memo(cache.page, url, () => fetchRealPage(url));
+    return { text: page.text };
+  },
+  fetchPage(url) {
+    return memo(cache.page, url, () => fetchRealPage(url));
+  },
+  search(query) {
+    return memo(cache.search, query, () => tavilySearch(query));
+  },
+  readRepo(repoUrl) {
+    return memo(cache.repo, repoUrl, () => readGithubRepo(repoUrl));
+  },
+};
+
 export function getTools(): Tools {
-  // TODO(M5): return real adapters when BROWSERLESS_TOKEN / TAVILY_API_KEY are set.
-  return stubTools;
+  // Real adapters whenever we can do the fetch (GitHub + page need no key);
+  // search degrades gracefully to [] without TAVILY_API_KEY. Force the offline
+  // stub with TOOLS=stub (used by the canned demo path).
+  if ((process.env.TOOLS ?? "").toLowerCase() === "stub") return stubTools;
+  return realTools;
 }

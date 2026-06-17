@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { loadSkill } from "./registry";
 import { getProvider } from "@/lib/llm";
+import { getTools } from "@/lib/tools";
 import { personaFor } from "@/lib/personas";
 import {
   RunInputs,
   SkillEnvelope,
+  SkillMeta,
   SEVERITIES,
   STANCES,
   EFFORTS,
@@ -34,14 +36,67 @@ const AnalysisSchema = z.object({
 });
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
-const asSeverity = (s?: string): Severity =>
-  (SEVERITIES as readonly string[]).includes(s ?? "") ? (s as Severity) : "low";
-const asStance = (s?: string): Stance =>
-  (STANCES as readonly string[]).includes(s ?? "") ? (s as Stance) : "n/a";
-const asEffort = (s?: string): Effort | undefined =>
-  (EFFORTS as readonly string[]).includes(s ?? "") ? (s as Effort) : undefined;
+const norm = (s?: string) => (s ?? "").trim().toLowerCase();
 
-function buildPrompt(body: string, inputs: RunInputs): string {
+const asSeverity = (s?: string): Severity =>
+  (SEVERITIES as readonly string[]).includes(norm(s)) ? (norm(s) as Severity) : "low";
+const asEffort = (s?: string): Effort | undefined =>
+  (EFFORTS as readonly string[]).includes(norm(s)) ? (norm(s) as Effort) : undefined;
+const asStance = (s?: string): Stance => {
+  const v = norm(s);
+  // exact, then word-ish containment (models sometimes wrap the stance in prose)
+  for (const t of STANCES) if (v === t) return t as Stance;
+  for (const t of ["block", "fix-first", "ship"] as const) if (v.includes(t)) return t;
+  return "n/a";
+};
+
+// Strip markdown fences / surrounding prose, then parse the JSON object.
+function parseAnalysis(raw: string): unknown {
+  let t = raw.trim();
+  if (t.startsWith("```")) t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  if (!t.startsWith("{")) {
+    const a = t.indexOf("{");
+    const b = t.lastIndexOf("}");
+    if (a !== -1 && b > a) t = t.slice(a, b + 1);
+  }
+  return JSON.parse(t);
+}
+
+// Market skills that benefit from live web search.
+const SEARCH_SKILLS = new Set([
+  "analyze-competitors",
+  "size-market",
+  "assess-pricing",
+  "check-discoverability",
+]);
+
+/** Gather real evidence for the artifacts this skill needs, as prompt-ready text. */
+async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<string> {
+  const tools = getTools();
+  const needs = (i: string) => meta.inputs.includes(i);
+  const parts: string[] = [];
+
+  if (needs("repo") && inputs.repo) {
+    const r = await tools.readRepo(inputs.repo);
+    parts.push(`## Repository evidence\n${r.readme ?? r.tree.join("\n")}`);
+  }
+  if (needs("url") && inputs.url) {
+    const p = await tools.fetchPage(inputs.url);
+    parts.push(`## Live page evidence (HTTP ${p.status})\n${p.text}`);
+  }
+  if (SEARCH_SKILLS.has(meta.name) && inputs.description) {
+    const results = await tools.search(inputs.description.slice(0, 160));
+    if (results.length) {
+      parts.push(
+        `## Web search evidence\n` +
+          results.map((s) => `- ${s.title} (${s.url})\n  ${s.snippet}`).join("\n"),
+      );
+    }
+  }
+  return parts.join("\n\n");
+}
+
+function buildPrompt(body: string, inputs: RunInputs, evidence: string): string {
   const ctx = [
     inputs.url ? `Deployed URL: ${inputs.url}` : null,
     inputs.repo ? `GitHub repo: ${inputs.repo}` : null,
@@ -52,16 +107,20 @@ function buildPrompt(body: string, inputs: RunInputs): string {
 
   return [
     "Run the skill below on the project and return ONLY a JSON object with keys:",
-    "score (0-10 number), stance (one of: block | fix-first | ship | n/a),",
+    "score (0-10 number), stance (EXACTLY one of: block | fix-first | ship | n/a),",
     "rubricBreakdown ([{dimension, max, earned}]),",
     "findings ([{title, severity(critical|high|medium|low|nit), evidence, fix, effort(easy|medium|hard)}]),",
     "note (optional string).",
+    "Base every finding on the EVIDENCE below — cite file paths / specifics. Do not invent facts.",
     "",
     "=== SKILL ===",
     body.slice(0, 6000),
     "",
     "=== PROJECT ===",
     ctx || "(no artifacts provided)",
+    "",
+    "=== EVIDENCE ===",
+    evidence || "(no evidence could be retrieved — reason carefully from the project info above and lower confidence accordingly)",
   ].join("\n");
 }
 
@@ -87,13 +146,14 @@ export async function runSkill(skillId: string, inputs: RunInputs): Promise<Skil
   const system = `You are ${p.persona}, the ${p.display} on a product-review team. Be direct, specific, and evidence-based. Never invent precise numbers — give ranges with reasoning.`;
 
   try {
+    const evidence = await gatherEvidence(meta, inputs);
     const raw = await provider.complete({
       system,
-      prompt: buildPrompt(body, inputs),
+      prompt: buildPrompt(body, inputs, evidence),
       json: true,
       meta: { skillId, specialist: meta.specialist },
     });
-    const a = AnalysisSchema.parse(JSON.parse(raw));
+    const a = AnalysisSchema.parse(parseAnalysis(raw));
     return {
       skillId,
       specialist: meta.specialist,
