@@ -7,6 +7,7 @@ description: >-
 specialist: QA Engineer
 tier: P0
 inputs: [repo]
+modes: [product]
 version: 0.1
 ---
 

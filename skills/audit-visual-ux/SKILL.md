@@ -7,6 +7,7 @@ description: >-
 specialist: UX Designer
 tier: P0
 inputs: [url]
+modes: [product]
 version: 0.1
 ---
 

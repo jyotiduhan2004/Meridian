@@ -4,8 +4,9 @@
   --background: #0a0b0d;
   --foreground: #e7e9ee;
   --muted: #9aa3b2;
-  --border: #1d2026;
-  --card: #111317;
+  --border: #20242c;
+  --card: #14161b;
+  --card-2: #1a1d24;
   --accent: #4f9cf9;
 }
 
@@ -15,13 +16,33 @@
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-card: var(--card);
+  --color-card-2: var(--card-2);
   --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  font-size: 16px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* radial glow used behind the home hero */
+.glow {
+  background:
+    radial-gradient(60rem 30rem at 50% -10%, rgba(79, 156, 249, 0.12), transparent 70%),
+    radial-gradient(40rem 24rem at 85% 10%, rgba(167, 139, 250, 0.08), transparent 70%);
+}
+
+/* thin, unobtrusive scrollbars for the tabbed panes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }

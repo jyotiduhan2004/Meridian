@@ -9,7 +9,15 @@ import { tavilySearch } from "./search";
 
 export type SearchResult = { title: string; url: string; snippet: string };
 export type PageFetch = { status: number; html: string; text: string };
-export type RepoRead = { tree: string[]; readme?: string };
+export type RepoRead = {
+  tree: string[];
+  /** composed evidence blob consumed by the skill runner */
+  readme?: string;
+  /** the GitHub repo's one-line description (for deriving a product description) */
+  description?: string;
+  /** the raw README text, separate from the composed evidence */
+  rawReadme?: string;
+};
 
 export interface Tools {
   /** screenshot a URL for the UX skill (returns a vision image when available) */
@@ -35,7 +43,12 @@ const stubTools: Tools = {
     ];
   },
   async readRepo(repoUrl) {
-    return { tree: ["README.md", "package.json", "src/"], readme: `[stub repo] ${repoUrl}` };
+    return {
+      tree: ["README.md", "package.json", "src/"],
+      readme: `[stub repo] ${repoUrl}`,
+      description: "A demo product for local testing.",
+      rawReadme: `# Demo\nA demo product for local testing (${repoUrl}).`,
+    };
   },
 };
 

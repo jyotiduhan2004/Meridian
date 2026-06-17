@@ -9,19 +9,21 @@ export type Persona = {
   emoji: string;
   /** sort order on the dashboard */
   order: number;
+  /** signature accent color (hex) for tabs, headers, score bars */
+  color: string;
 };
 
 export const PERSONAS: Record<string, Persona> = {
-  PM: { persona: "Priya", display: "Product Lead", emoji: "📋", order: 0 },
-  "UX Designer": { persona: "Leo", display: "UX Designer", emoji: "🎨", order: 1 },
-  "QA Engineer": { persona: "Sam", display: "QA Engineer", emoji: "🧪", order: 2 },
-  "Market Researcher": { persona: "Dana", display: "Market Researcher", emoji: "📊", order: 3 },
-  "Security Engineer": { persona: "Maya", display: "Security Engineer", emoji: "🔒", order: 4 },
-  "DevOps Engineer": { persona: "Dev", display: "DevOps Engineer", emoji: "⚙️", order: 5 },
-  Investor: { persona: "Victoria", display: "The Investor", emoji: "🦈", order: 6 },
+  PM: { persona: "Priya", display: "Product Lead", emoji: "📋", order: 0, color: "#a78bfa" },
+  "UX Designer": { persona: "Leo", display: "UX Designer", emoji: "🎨", order: 1, color: "#f472b6" },
+  "QA Engineer": { persona: "Sam", display: "QA Engineer", emoji: "🧪", order: 2, color: "#2dd4bf" },
+  "Market Researcher": { persona: "Dana", display: "Market Researcher", emoji: "📊", order: 3, color: "#fbbf24" },
+  "Security Engineer": { persona: "Maya", display: "Security Engineer", emoji: "🔒", order: 4, color: "#f87171" },
+  "DevOps Engineer": { persona: "Dev", display: "DevOps Engineer", emoji: "⚙️", order: 5, color: "#38bdf8" },
+  Investor: { persona: "Victoria", display: "The Investor", emoji: "🦈", order: 6, color: "#eab308" },
 };
 
-const FALLBACK: Persona = { persona: "—", display: "Specialist", emoji: "•", order: 99 };
+const FALLBACK: Persona = { persona: "—", display: "Specialist", emoji: "•", order: 99, color: "#9aa3b2" };
 
 export function personaFor(specialist: string): Persona {
   return PERSONAS[specialist] ?? FALLBACK;

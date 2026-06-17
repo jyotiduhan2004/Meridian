@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { planRun } from "@/lib/orchestrator";
+import { enrichInputs } from "@/lib/enrich";
 import { store, Run } from "@/lib/store";
 import { loadRegistry } from "@/lib/skills/registry";
 import { SkillEnvelope, RunInputs, Mode } from "@/lib/schema";
@@ -9,8 +10,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const inputs: RunInputs = body.inputs ?? {};
   const mode: Mode = body.mode === "idea" ? "idea" : "product";
+  // Idea mode is concept-only (description); Product mode can derive the
+  // description/URL from a pasted repo so Market + PM skills engage too.
+  const inputs: RunInputs =
+    mode === "product" ? await enrichInputs(body.inputs ?? {}) : body.inputs ?? {};
 
   const { eligible, skipped } = planRun(inputs, mode);
   const reg = loadRegistry();

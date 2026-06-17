@@ -7,6 +7,7 @@ description: >-
 specialist: PM
 tier: P1
 inputs: [description]
+modes: [idea, product]
 version: 0.1
 ---
 

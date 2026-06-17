@@ -7,6 +7,7 @@ description: >-
 specialist: Market Researcher
 tier: P0
 inputs: [description]
+modes: [idea, product]
 version: 0.1
 ---
 

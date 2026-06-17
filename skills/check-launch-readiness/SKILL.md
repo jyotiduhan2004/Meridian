@@ -7,6 +7,7 @@ description: >-
 specialist: DevOps Engineer
 tier: P1
 inputs: [url]
+modes: [product]
 version: 0.1
 ---
 

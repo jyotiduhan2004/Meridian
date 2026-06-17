@@ -6,6 +6,7 @@ description: >-
 specialist: Security Engineer
 tier: P1
 inputs: [repo]
+modes: [product]
 version: 0.1
 ---
 

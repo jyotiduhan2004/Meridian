@@ -7,6 +7,7 @@ description: >-
 specialist: Market Researcher
 tier: P2
 inputs: [url]
+modes: [product]
 version: 0.1
 ---
 

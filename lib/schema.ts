@@ -32,6 +32,9 @@ export const SkillMeta = z.object({
   specialist: z.string(), // e.g. "QA Engineer" (kept loose; display via personas)
   tier: z.enum(["P0", "P1", "P2"]).default("P0"),
   inputs: z.array(z.string()).default([]),
+  // Which run modes this skill participates in. Idea mode = concept-stage
+  // (PM + Market); Product mode = the full team. Omitted ⇒ both.
+  modes: z.array(z.enum(["idea", "product"])).default(["idea", "product"]),
   version: z.union([z.string(), z.number()]).optional(),
 });
 export type SkillMeta = z.infer<typeof SkillMeta>;
@@ -90,7 +93,12 @@ export function availableInputs(inputs: RunInputs): Set<string> {
   return s;
 }
 
-/** Eligible = fan-out skill whose required artifact inputs are all present. */
-export function isEligible(meta: SkillMeta, available: Set<string>): boolean {
-  return isFanoutSkill(meta) && meta.inputs.every((i) => available.has(i));
+/** Does this skill run in the given mode? (Omitted modes ⇒ both.) */
+export function runsInMode(meta: SkillMeta, mode: Mode): boolean {
+  return (meta.modes ?? ["idea", "product"]).includes(mode);
+}
+
+/** Eligible = fan-out skill that runs in this mode and has all its inputs present. */
+export function isEligible(meta: SkillMeta, available: Set<string>, mode: Mode): boolean {
+  return runsInMode(meta, mode) && isFanoutSkill(meta) && meta.inputs.every((i) => available.has(i));
 }

@@ -6,7 +6,8 @@ description: >-
   a feature matrix, assess moats and differentiation. Idea or Product Mode.
 specialist: Market Researcher
 tier: P0
-inputs: [description, url]
+inputs: [description]
+modes: [idea, product]
 version: 0.1
 ---
 

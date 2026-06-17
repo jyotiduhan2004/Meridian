@@ -147,5 +147,10 @@ export async function readGithubRepo(repoUrl: string): Promise<RepoRead> {
     files.length ? `\nKey file contents:\n${fileBlocks}` : "",
   ].join("\n");
 
-  return { tree, readme: composed };
+  return {
+    tree,
+    readme: composed,
+    description: meta.description ?? undefined,
+    rawReadme: readme,
+  };
 }

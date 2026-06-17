@@ -16,7 +16,7 @@ export type Run = {
   mode: Mode;
   inputs: RunInputs;
   plan: string[]; // eligible fan-out skill ids
-  skipped: { skillId: string; reason: string }[];
+  skipped: { skillId: string; specialist: string; reason: string }[];
   skills: Record<string, SkillEnvelope>; // by skillId
   events: RunEvent[];
   verdict: Verdict;

@@ -72,12 +72,21 @@ export default function Intake() {
           </button>
         ))}
       </div>
+      <p className="mb-3 text-center text-xs text-muted">
+        {mode === "idea"
+          ? "Idea = concept stage → Priya (PM) + Dana (Market) weigh in."
+          : "Product = built → the full team (UX, code, security, ops, market, PM)."}
+      </p>
 
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Paste a URL, a GitHub repo, a description — anything about your project…"
-        className="h-32 w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted/60 focus:border-accent focus:outline-none"
+        placeholder={
+          mode === "idea"
+            ? "Describe your idea — the problem, who it's for, how it works…"
+            : "Paste a URL, a GitHub repo, a description — anything about your project…"
+        }
+        className="h-32 w-full resize-none rounded-xl border border-border bg-card p-4 text-base text-foreground placeholder:text-muted/60 focus:border-accent focus:outline-none"
       />
 
       {!ex ? (
