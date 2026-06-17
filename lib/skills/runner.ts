@@ -69,12 +69,17 @@ const SEARCH_SKILLS = new Set([
   "assess-pricing",
   "check-discoverability",
 ]);
+// Skills that need to *see* the page — a live screenshot is attached as a vision image.
+const VISION_SKILLS = new Set(["audit-visual-ux", "walk-user-journey"]);
 
-/** Gather real evidence for the artifacts this skill needs, as prompt-ready text. */
-async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<string> {
+type Evidence = { text: string; images: { mimeType: string; dataBase64: string }[] };
+
+/** Gather real evidence for the artifacts this skill needs. */
+async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<Evidence> {
   const tools = getTools();
   const needs = (i: string) => meta.inputs.includes(i);
   const parts: string[] = [];
+  const images: Evidence["images"] = [];
 
   if (needs("repo") && inputs.repo) {
     const r = await tools.readRepo(inputs.repo);
@@ -83,6 +88,15 @@ async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<strin
   if (needs("url") && inputs.url) {
     const p = await tools.fetchPage(inputs.url);
     parts.push(`## Live page evidence (HTTP ${p.status})\n${p.text}`);
+  }
+  if (VISION_SKILLS.has(meta.name) && inputs.url) {
+    const shot = await tools.screenshot(inputs.url);
+    if (shot.image) {
+      images.push(shot.image);
+      parts.push(`## Screenshot\nA live screenshot of the page is attached — judge the actual visual experience.`);
+    } else if (shot.text) {
+      parts.push(`## Screenshot\n${shot.text}`);
+    }
   }
   if (SEARCH_SKILLS.has(meta.name) && inputs.description) {
     const results = await tools.search(inputs.description.slice(0, 160));
@@ -93,7 +107,7 @@ async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<strin
       );
     }
   }
-  return parts.join("\n\n");
+  return { text: parts.join("\n\n"), images };
 }
 
 function buildPrompt(body: string, inputs: RunInputs, evidence: string): string {
@@ -143,13 +157,14 @@ export async function runSkill(skillId: string, inputs: RunInputs): Promise<Skil
   const { meta, body } = loaded;
   const p = personaFor(meta.specialist);
   const provider = getProvider();
-  const system = `You are ${p.persona}, the ${p.display} on a product-review team. Be direct, specific, and evidence-based. Never invent precise numbers — give ranges with reasoning.`;
+  const system = `You are the ${p.role} on a product-review team. Be direct, specific, and evidence-based. Never invent precise numbers — give ranges with reasoning.`;
 
   try {
     const evidence = await gatherEvidence(meta, inputs);
     const raw = await provider.complete({
       system,
-      prompt: buildPrompt(body, inputs, evidence),
+      prompt: buildPrompt(body, inputs, evidence.text),
+      images: evidence.images.length ? evidence.images : undefined,
       json: true,
       meta: { skillId, specialist: meta.specialist },
     });

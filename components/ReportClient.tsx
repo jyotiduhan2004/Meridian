@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { personaFor } from "@/lib/personas";
 import { trackEvent } from "@/lib/track";
 import type { SkillEnvelope } from "@/lib/schema";
+import { CallsignBadge, ChannelBar, Panel, ScoreRing, SeverityTag, StatusLine } from "@/components/hud";
 
 type Verdict = {
   meridianScore: number;
@@ -24,21 +26,6 @@ type Run = {
   verdict: Verdict | null;
 };
 
-const DOT: Record<string, string> = {
-  pending: "bg-muted/40",
-  running: "bg-accent animate-pulse",
-  done: "bg-emerald-400",
-  partial: "bg-yellow-400",
-  failed: "bg-red-400",
-  skipped: "bg-muted/30",
-};
-const SEV: Record<string, string> = {
-  critical: "text-red-400 border-red-400/30 bg-red-400/10",
-  high: "text-orange-400 border-orange-400/30 bg-orange-400/10",
-  medium: "text-yellow-400 border-yellow-400/30 bg-yellow-400/10",
-  low: "text-sky-400 border-sky-400/30 bg-sky-400/10",
-  nit: "text-muted border-border bg-card",
-};
 const STANCE: Record<string, string> = {
   block: "text-red-400 border-red-400/40",
   "fix-first": "text-yellow-400 border-yellow-400/40",
@@ -69,6 +56,15 @@ async function pool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>
     }
   });
   await Promise.all(workers);
+}
+
+export function Wordmark({ className = "" }: { className?: string }) {
+  return (
+    <span className={`mono inline-flex items-center gap-1.5 font-semibold tracking-[0.2em] ${className}`}>
+      <span className="text-accent glow">⊕</span>
+      MERIDIAN
+    </span>
+  );
 }
 
 export default function ReportClient({ id }: { id: string }) {
@@ -105,11 +101,7 @@ export default function ReportClient({ id }: { id: string }) {
           if (res.ok) {
             const env: SkillEnvelope = await res.json();
             setSkill(env);
-            trackEvent("skill_completed", {
-              skill: env.skillId,
-              status: env.status,
-              score: env.score ?? -1,
-            });
+            trackEvent("skill_completed", { skill: env.skillId, status: env.status, score: env.score ?? -1 });
           }
         } catch {
           /* leave as pending; the dashboard tolerates it */
@@ -128,16 +120,18 @@ export default function ReportClient({ id }: { id: string }) {
   if (notFound) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <p className="text-muted">This analysis was not found (the in-memory store resets on restart).</p>
+        <p className="mono text-sm text-muted">
+          <span className="text-red-400">! </span>analysis not found — the in-memory store resets on restart.
+        </p>
         <Link href="/" className="text-accent hover:underline">
-          ← Start a new analysis
+          ← new analysis
         </Link>
       </main>
     );
   }
 
   if (!run) {
-    return <main className="flex-1 flex items-center justify-center p-8 text-muted">Loading…</main>;
+    return <main className="mono flex-1 flex items-center justify-center p-8 text-muted">booting…</main>;
   }
 
   const skills = Object.values(run.skills);
@@ -155,36 +149,36 @@ export default function ReportClient({ id }: { id: string }) {
 
   return (
     <main className="flex-1 w-full">
-      {/* sticky header */}
+      {/* sticky HUD header */}
       <header className="sticky top-0 z-10 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3.5">
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3">
           <Link href="/" className="text-sm text-muted transition hover:text-foreground">
-            ← Meridian
+            <Wordmark className="text-sm" />
           </Link>
           <div className="ml-auto flex items-center gap-3.5">
             {verdict ? (
               <>
-                <ScoreRing score={verdict.meridianScore} color={VERDICT_RING[verdict.verdict]} />
+                <ScoreRing score={verdict.meridianScore} color={VERDICT_RING[verdict.verdict]} size={56} />
                 <div className="leading-tight">
-                  <div className={`text-base font-bold ${VERDICT_STYLE[verdict.verdict]}`}>
+                  <div className={`mono text-base font-bold ${VERDICT_STYLE[verdict.verdict]}`}>
                     {VERDICT_LABEL[verdict.verdict]}
                   </div>
-                  <div className="text-xs text-muted">
-                    {totalDone}/{skills.length} specialists · {progress}%
+                  <div className="mono text-xs text-muted">
+                    {totalDone}/{skills.length} online · {progress}%
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-3 text-sm text-muted">
+              <div className="mono flex items-center gap-2 text-sm text-accent">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                The team is analyzing… {progress}%
+                <span className="cursor">analyzing… {progress}%</span>
               </div>
             )}
           </div>
         </div>
-        {/* tab bar */}
+        {/* channel tabs */}
         <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-3">
-          <TabBtn active={tab === "overview"} color="#4f9cf9" emoji="📊" label="Overview" onClick={() => setTab("overview")} />
+          <TabBtn active={tab === "overview"} color="var(--accent)" label="OVERVIEW" onClick={() => setTab("overview")} />
           {specialists.map(([spec, list]) => {
             const p = personaFor(spec);
             return (
@@ -192,8 +186,8 @@ export default function ReportClient({ id }: { id: string }) {
                 key={spec}
                 active={tab === spec}
                 color={p.color}
-                emoji={p.emoji}
-                label={p.persona}
+                callsign={p.callsign}
+                label={p.label}
                 count={list.length}
                 onClick={() => setTab(spec)}
               />
@@ -203,8 +197,8 @@ export default function ReportClient({ id }: { id: string }) {
             <TabBtn
               active={tab === "investor"}
               color={personaFor("Investor").color}
-              emoji="🦈"
-              label="The Investor"
+              callsign="INV"
+              label="THE INVESTOR"
               onClick={() => setTab("investor")}
             />
           )}
@@ -224,30 +218,17 @@ export default function ReportClient({ id }: { id: string }) {
   );
 }
 
-function ScoreRing({ score, color }: { score: number; color: string }) {
-  return (
-    <div
-      className="relative h-12 w-12 shrink-0 rounded-full"
-      style={{ background: `conic-gradient(${color} ${score * 3.6}deg, var(--border) 0)` }}
-    >
-      <div className="absolute inset-[3px] flex items-center justify-center rounded-full bg-background text-base font-semibold">
-        {score}
-      </div>
-    </div>
-  );
-}
-
 function TabBtn({
   active,
   color,
-  emoji,
+  callsign,
   label,
   count,
   onClick,
 }: {
   active: boolean;
   color: string;
-  emoji: string;
+  callsign?: string;
   label: string;
   count?: number;
   onClick: () => void;
@@ -255,20 +236,26 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
-      className="relative flex items-center gap-2 whitespace-nowrap px-4 py-3 text-sm transition hover:text-foreground"
+      className="relative flex items-center gap-2 whitespace-nowrap px-3.5 py-3 text-sm transition hover:text-foreground"
       style={active ? { color } : undefined}
     >
-      <span>{emoji}</span>
-      <span className={active ? "font-semibold" : "text-muted"}>{label}</span>
+      {callsign && <CallsignBadge callsign={callsign} color={color} active={active} />}
+      <span className={`mono tracking-wider ${active ? "font-semibold" : "text-muted"}`}>{label}</span>
       {count != null && (
-        <span className="rounded-full bg-card-2 px-1.5 py-0.5 text-xs text-muted">{count}</span>
+        <span className="mono rounded-full bg-panel-2 px-1.5 py-0.5 text-xs text-muted">{count}</span>
       )}
       {active && (
-        <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full" style={{ background: color }} />
+        <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />
       )}
     </button>
   );
 }
+
+const reveal = (i: number) => ({
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.35, delay: i * 0.06, ease: "easeOut" as const },
+});
 
 function Overview({
   verdict,
@@ -284,34 +271,33 @@ function Overview({
   const pm = personaFor("PM");
   if (!verdict) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
-        <p className="text-sm text-muted">The team is analyzing your product…</p>
+      <Panel active className="p-6">
+        <p className="mono text-sm text-accent cursor">running specialists…</p>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-background">
-          <div className="h-full bg-accent transition-all" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-accent transition-all" style={{ width: `${progress}%`, boxShadow: "0 0 12px var(--accent)" }} />
         </div>
-        <p className="mt-3 text-sm text-muted">Open a specialist tab above to watch findings land live.</p>
-      </div>
+        <p className="mono mt-3 text-xs text-muted">open a channel above to watch findings resolve live.</p>
+      </Panel>
     );
   }
   return (
     <div className="space-y-7">
-      {/* PM synthesis */}
-      <section
-        className="rounded-2xl border p-6"
-        style={{ borderColor: `${pm.color}55`, background: `${pm.color}0f` }}
-      >
-        <div className="mb-2 flex items-center gap-2 text-sm" style={{ color: pm.color }}>
-          <span>{pm.emoji}</span>
-          <span className="font-semibold">{pm.persona}</span>
-          <span className="text-muted">· {pm.display}</span>
-        </div>
-        <p className="text-lg leading-relaxed">{verdict.note}</p>
-      </section>
+      {/* PRODUCT synthesis */}
+      <motion.div {...reveal(0)}>
+        <Panel className="p-6" >
+          <div className="mb-2 flex items-center gap-2">
+            <CallsignBadge callsign={pm.callsign} color={pm.color} />
+            <span className="mono text-sm tracking-wider" style={{ color: pm.color }}>{pm.label}</span>
+            <span className="mono text-xs text-muted">· verdict</span>
+          </div>
+          <p className="text-lg leading-relaxed">{verdict.note}</p>
+        </Panel>
+      </motion.div>
 
-      {/* specialist score bars */}
+      {/* channel scores */}
       {verdict.scoreBreakdown.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm uppercase tracking-wider text-muted">Specialist scores</h2>
+        <motion.section {...reveal(1)}>
+          <h2 className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">channel scores</h2>
           <div className="space-y-2">
             {verdict.scoreBreakdown.map((b) => {
               const p = personaFor(b.specialist);
@@ -319,63 +305,57 @@ function Overview({
                 <button
                   key={b.specialist}
                   onClick={() => onJump(b.specialist)}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-left transition hover:bg-card-2"
+                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-panel px-4 py-2.5 text-left transition hover:bg-panel-2"
                 >
-                  <span className="w-28 shrink-0 text-sm">
-                    <span className="mr-1">{p.emoji}</span>
-                    {p.persona}
-                  </span>
-                  <span className="relative h-2 flex-1 overflow-hidden rounded-full bg-background">
-                    <span
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: `${b.score * 10}%`, background: p.color }}
-                    />
-                  </span>
-                  <span className="w-12 shrink-0 text-right text-sm font-medium">{b.score}/10</span>
+                  <CallsignBadge callsign={p.callsign} color={p.color} />
+                  <span className="mono w-24 shrink-0 text-sm tracking-wider" style={{ color: p.color }}>{p.label}</span>
+                  <ChannelBar value={b.score} color={p.color} />
+                  <span className="mono w-12 shrink-0 text-right text-sm font-medium">{b.score}/10</span>
                 </button>
               );
             })}
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* conflicts */}
       {verdict.conflicts.length > 0 && (
-        <section className="rounded-2xl border border-yellow-400/30 bg-yellow-400/5 p-5">
-          <p className="mb-2 text-sm font-semibold text-yellow-400">⚠ Team conflict</p>
-          {verdict.conflicts.map((c, i) => (
-            <div key={i} className="text-sm text-muted">
-              <p>{c.a}</p>
-              <p>{c.b}</p>
-              <p className="mt-2 text-foreground">📋 {c.resolution}</p>
-            </div>
-          ))}
-        </section>
+        <motion.div {...reveal(2)}>
+          <div className="rounded-lg border border-yellow-400/40 bg-yellow-400/5 p-5">
+            <p className="mono mb-2 text-sm font-semibold tracking-wider text-yellow-400">⚠ TEAM CONFLICT</p>
+            {verdict.conflicts.map((c, i) => (
+              <div key={i} className="text-sm text-muted">
+                <p>{c.a}</p>
+                <p>{c.b}</p>
+                <p className="mt-2 text-foreground">→ {c.resolution}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       )}
 
       {/* prioritized fixes */}
       {verdict.fixList.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-sm uppercase tracking-wider text-muted">Prioritized fixes</h2>
+        <motion.section {...reveal(3)}>
+          <h2 className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">prioritized fixes</h2>
           <ol className="space-y-2">
             {verdict.fixList.map((f, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm"
-              >
-                <span className="text-muted">{i + 1}</span>
-                <span className={`rounded border px-1.5 py-0.5 text-xs ${SEV[f.severity] ?? SEV.nit}`}>
-                  {f.severity}
-                </span>
+              <li key={i} className="flex items-center gap-3 rounded-lg border border-border bg-panel px-4 py-3 text-sm">
+                <span className="mono text-muted">{String(i + 1).padStart(2, "0")}</span>
+                <SeverityTag severity={f.severity} />
                 <span>{f.title}</span>
               </li>
             ))}
           </ol>
-        </section>
+        </motion.section>
       )}
 
-      {/* didn't run */}
-      {run.skipped.length > 0 && <DidntRun skipped={run.skipped} />}
+      {/* standby / didn't run */}
+      {run.skipped.length > 0 && (
+        <motion.div {...reveal(4)}>
+          <DidntRun skipped={run.skipped} />
+        </motion.div>
+      )}
     </div>
   );
 }
@@ -391,18 +371,15 @@ function DidntRun({ skipped }: { skipped: Skipped[] }) {
   );
   return (
     <section>
-      <h2 className="mb-3 text-sm uppercase tracking-wider text-muted">Didn&apos;t run</h2>
+      <h2 className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">standby · didn&apos;t run</h2>
       <div className="space-y-2">
         {groups.map(([spec, items]) => {
           const p = personaFor(spec);
           return (
-            <div key={spec} className="rounded-lg border border-border bg-card px-4 py-3 text-sm">
-              <span className="font-medium" style={{ color: p.color }}>
-                {p.emoji} {p.persona}
-              </span>
-              <span className="text-muted">
-                {" "}
-                — {items.map((i) => i.skillId).join(", ")} · {items[0].reason}
+            <div key={spec} className="flex items-center gap-2.5 rounded-lg border border-border bg-panel px-4 py-3 text-sm">
+              <CallsignBadge callsign={p.callsign} color={p.color} />
+              <span className="mono text-muted">
+                {items.map((i) => i.skillId).join(", ")} · {items[0].reason}
               </span>
             </div>
           );
@@ -420,29 +397,26 @@ function SpecialistPane({ spec, list }: { spec: string; list: SkillEnvelope[] })
     : null;
   return (
     <div>
-      <div
-        className="mb-5 rounded-2xl border p-5"
-        style={{ borderColor: `${p.color}55`, background: `${p.color}0f` }}
-      >
+      <Panel className="mb-5 p-5" active={list.some((s) => s.status === "running" || s.status === "pending")}>
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{p.emoji}</span>
+          <CallsignBadge callsign={p.callsign} color={p.color} size="md" />
           <div>
-            <div className="text-lg font-semibold" style={{ color: p.color }}>
-              {p.persona}
-            </div>
-            <div className="text-sm text-muted">{p.display}</div>
+            <div className="mono text-lg font-semibold tracking-wider" style={{ color: p.color }}>{p.label}</div>
+            <div className="mono text-xs text-muted">{p.role}</div>
           </div>
           {avg != null && (
-            <div className="ml-auto text-2xl font-semibold">
+            <div className="mono ml-auto text-2xl font-semibold">
               {avg}
               <span className="text-sm text-muted">/10</span>
             </div>
           )}
         </div>
-      </div>
+      </Panel>
       <div className="space-y-4">
-        {list.map((s) => (
-          <SkillCard key={s.skillId} skill={s} color={p.color} />
+        {list.map((s, i) => (
+          <motion.div key={s.skillId} {...reveal(i)}>
+            <SkillCard skill={s} color={p.color} />
+          </motion.div>
         ))}
       </div>
     </div>
@@ -450,18 +424,18 @@ function SpecialistPane({ spec, list }: { spec: string; list: SkillEnvelope[] })
 }
 
 function SkillCard({ skill, color }: { skill: SkillEnvelope; color: string }) {
+  const working = skill.status === "running" || skill.status === "pending";
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <Panel className="p-5" active={working}>
       <div className="mb-3 flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${DOT[skill.status] ?? DOT.pending}`} />
-        <span className="font-mono text-sm text-muted">{skill.skillId}</span>
+        <StatusLine label={skill.skillId} status={skill.status} />
         {skill.stance && skill.stance !== "n/a" && STANCE[skill.stance] && (
-          <span className={`rounded border px-1.5 py-0.5 text-xs ${STANCE[skill.stance]}`}>
+          <span className={`mono rounded border px-1.5 py-0.5 text-[11px] uppercase tracking-wider ${STANCE[skill.stance]}`}>
             {skill.stance}
           </span>
         )}
         {skill.score != null && (
-          <span className="ml-auto text-lg font-semibold">
+          <span className="mono ml-auto text-lg font-semibold">
             {skill.score}
             <span className="text-xs text-muted">/10</span>
           </span>
@@ -471,14 +445,12 @@ function SkillCard({ skill, color }: { skill: SkillEnvelope; color: string }) {
       {skill.findings.length > 0 ? (
         <ul className="space-y-3">
           {skill.findings.map((f, i) => (
-            <li key={i} className="rounded-lg bg-card-2 p-3">
+            <li key={i} className="rounded-lg border border-border bg-panel-2 p-3">
               <div className="flex items-start gap-2">
-                <span className={`mt-0.5 rounded border px-1.5 py-0.5 text-xs ${SEV[f.severity] ?? SEV.nit}`}>
-                  {f.severity}
-                </span>
+                <SeverityTag severity={f.severity} />
                 <span className="text-sm font-medium">{f.title}</span>
               </div>
-              {f.evidence && <p className="mt-2 text-sm text-muted">{f.evidence}</p>}
+              {f.evidence && <p className="mono mt-2 text-xs text-muted">{f.evidence}</p>}
               {f.fix && (
                 <p className="mt-2 text-sm" style={{ color }}>
                   → {f.fix}
@@ -487,14 +459,14 @@ function SkillCard({ skill, color }: { skill: SkillEnvelope; color: string }) {
             </li>
           ))}
         </ul>
+      ) : working ? (
+        <p className="mono text-sm text-accent cursor">scanning</p>
       ) : skill.status === "failed" ? (
-        <p className="text-sm text-red-400">This check errored{skill.note ? ` — ${skill.note}` : "."}</p>
-      ) : skill.status === "running" || skill.status === "pending" ? (
-        <p className="text-sm text-muted">Working…</p>
+        <p className="mono text-sm text-red-400">! errored{skill.note ? ` — ${skill.note}` : "."}</p>
       ) : (
-        <p className="text-sm text-muted">No issues found.</p>
+        <p className="mono text-sm text-muted">no issues found.</p>
       )}
-    </div>
+    </Panel>
   );
 }
 
@@ -526,33 +498,30 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
     }
   }
 
-  if (!ready) return <p className="text-sm text-muted">The Investor enters once the verdict is in…</p>;
+  if (!ready) return <p className="mono text-sm text-muted">the investor enters once the verdict is in…</p>;
 
   return (
-    <section
-      className="rounded-2xl border p-6"
-      style={{ borderColor: `${p.color}55`, background: `${p.color}0f` }}
-    >
+    <Panel className="p-6">
       <div className="mb-4 flex items-center gap-2">
-        <span className="text-xl">🦈</span>
-        <span className="font-semibold" style={{ color: p.color }}>
-          {p.persona} — {p.display}
-        </span>
+        <CallsignBadge callsign="INV" color={p.color} size="md" />
+        <span className="mono text-lg font-semibold tracking-wider" style={{ color: p.color }}>THE INVESTOR</span>
       </div>
       {turns.length === 0 ? (
         <button
           onClick={() => next()}
           disabled={busy}
-          className="rounded-lg px-5 py-2.5 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-40"
-          style={{ background: p.color }}
+          className="mono rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wider text-background transition hover:opacity-90 disabled:opacity-40"
+          style={{ background: p.color, boxShadow: `0 0 18px -4px ${p.color}` }}
         >
-          {busy ? "…" : "Face the Investor →"}
+          {busy ? "…" : "FACE THE INVESTOR →"}
         </button>
       ) : (
         <div className="space-y-3">
           {turns.map((t, i) => (
             <p key={i} className={`text-sm ${t.who === "investor" ? "text-foreground" : "text-muted"}`}>
-              <span className="mr-1">{t.who === "investor" ? "🦈" : "🧑"}</span>
+              <span className="mono mr-1.5" style={{ color: t.who === "investor" ? p.color : undefined }}>
+                {t.who === "investor" ? "INV ›" : "YOU ›"}
+              </span>
               {t.text}
             </p>
           ))}
@@ -566,8 +535,8 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
                   setAnswer("");
                 }
               }}
-              placeholder="Defend your product…"
-              className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+              placeholder="defend your product…"
+              className="mono flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
             <button
               onClick={() => {
@@ -577,14 +546,14 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
                 }
               }}
               disabled={busy || !answer.trim()}
-              className="rounded-lg px-5 py-2.5 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-40"
+              className="mono rounded-lg px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-40"
               style={{ background: p.color }}
             >
-              Send
+              SEND
             </button>
           </div>
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

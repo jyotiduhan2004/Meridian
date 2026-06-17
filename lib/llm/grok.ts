@@ -4,13 +4,16 @@ import { LLMProvider, LLMRequest } from "./types";
 // Activated when LLM_PROVIDER=grok and XAI_API_KEY is set.
 export function grokProvider(): LLMProvider {
   const key = process.env.XAI_API_KEY ?? "";
-  const model = process.env.XAI_MODEL ?? "grok-2-latest";
+  const textModel = process.env.XAI_MODEL ?? "grok-2-latest";
+  const visionModel = process.env.XAI_VISION_MODEL ?? "grok-2-vision-1212";
 
   return {
     name: "grok",
-    vision: true, // use a vision model (e.g. grok-2-vision) for image requests
+    vision: true,
     async complete(req: LLMRequest): Promise<string> {
       if (!key) throw new Error("XAI_API_KEY is not set");
+      // Use a vision-capable model only when an image is attached.
+      const model = req.images?.length ? visionModel : textModel;
 
       const userContent: unknown = req.images?.length
         ? [

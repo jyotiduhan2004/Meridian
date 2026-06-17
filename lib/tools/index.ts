@@ -2,6 +2,7 @@ import { LLMImage } from "@/lib/llm/types";
 import { readGithubRepo } from "./github";
 import { fetchRealPage } from "./page";
 import { tavilySearch } from "./search";
+import { browserlessScreenshot } from "./browserless";
 
 // Shared tool layer. Skills request actions; this layer performs them.
 // GitHub repo read + page fetch work with no key; web search needs TAVILY_API_KEY;
@@ -60,11 +61,12 @@ const g = globalThis as unknown as {
     repo: Map<string, Promise<RepoRead>>;
     page: Map<string, Promise<PageFetch>>;
     search: Map<string, Promise<SearchResult[]>>;
+    shot: Map<string, Promise<{ image?: LLMImage; text?: string }>>;
   };
 };
 const cache =
   g.__meridianEvidence ??
-  (g.__meridianEvidence = { repo: new Map(), page: new Map(), search: new Map() });
+  (g.__meridianEvidence = { repo: new Map(), page: new Map(), search: new Map(), shot: new Map() });
 
 function memo<T>(map: Map<string, Promise<T>>, key: string, fn: () => Promise<T>): Promise<T> {
   const hit = map.get(key);
@@ -78,10 +80,13 @@ function memo<T>(map: Map<string, Promise<T>>, key: string, fn: () => Promise<T>
 }
 
 const realTools: Tools = {
-  // Live screenshots need Browserless; until then fall back to fetched page text.
-  async screenshot(url) {
-    const page = await memo(cache.page, url, () => fetchRealPage(url));
-    return { text: page.text };
+  // Live screenshot via Browserless when a token is set; otherwise fall back to
+  // the fetched page text so the loop still runs.
+  screenshot(url) {
+    if (process.env.BROWSERLESS_TOKEN) {
+      return memo(cache.shot, url, () => browserlessScreenshot(url));
+    }
+    return memo(cache.page, url, () => fetchRealPage(url)).then((p) => ({ text: p.text }));
   },
   fetchPage(url) {
     return memo(cache.page, url, () => fetchRealPage(url));

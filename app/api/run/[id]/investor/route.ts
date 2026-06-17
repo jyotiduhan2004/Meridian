@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 type Turn = { who: "investor" | "you"; text: string };
 
-// Build a grounded brief from the real run so Victoria challenges THIS project,
-// not a generic startup she invents.
+// Build a grounded brief from the real run so THE INVESTOR challenges THIS
+// project, not a generic startup it invents.
 function projectBrief(run: ReturnType<typeof store.get>): string {
   if (!run) return "(project unavailable)";
   const desc = run.inputs?.description?.slice(0, 900) || "(no written description — infer from the findings)";
@@ -37,11 +37,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const brief = projectBrief(run);
   const transcript = (history as Turn[])
-    .map((t) => `${t.who === "investor" ? "Victoria" : "Founder"}: ${t.text}`)
+    .map((t) => `${t.who === "investor" ? "Investor" : "Founder"}: ${t.text}`)
     .join("\n");
 
   const system = [
-    "You are Victoria — a sharp, tough-but-fair venture investor grilling a founder about the SPECIFIC product described below.",
+    "You are THE INVESTOR — a sharp, tough-but-fair venture investor grilling a founder about the SPECIFIC product described below.",
     "Hard rules:",
     "- Ground every question in the ACTUAL product and the team's findings below. NEVER invent facts, numbers, or claims the founder hasn't made — no fictional pitch deck, market-share %, churn, CAC, or revenue projections that aren't in the brief.",
     "- If the founder asks what the product is or pushes back, briefly restate it from the brief in your own words, then ask your next question. Don't get evasive or repeat yourself.",
@@ -53,7 +53,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   ].join("\n");
 
   const prompt = answer
-    ? `${transcript ? `Conversation so far:\n${transcript}\n\n` : ""}Founder just said: "${answer}"\n\nRespond as Victoria — react to that specific answer, then ask your next grounded question.`
+    ? `${transcript ? `Conversation so far:\n${transcript}\n\n` : ""}Founder just said: "${answer}"\n\nRespond as THE INVESTOR — react to that specific answer, then ask your next grounded question.`
     : "Open the debate: lead with your hardest question, grounded in a real, specific weakness from the brief above.";
 
   try {
@@ -63,8 +63,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const rateLimited = /429|quota/i.test(String(e));
     return NextResponse.json({
       turn: rateLimited
-        ? "(Victoria steps out — the model is rate-limited right now. Try again in a minute, or switch to stub mode for an uninterrupted run.)"
-        : "(Victoria couldn't respond just now — please try again.)",
+        ? "(The investor steps out — the model is rate-limited right now. Try again in a minute, or switch to stub mode for an uninterrupted run.)"
+        : "(The investor couldn't respond just now — please try again.)",
     });
   }
 }
