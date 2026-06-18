@@ -132,55 +132,69 @@ function findDemoUrl(readme?: string): string | undefined {
 }
 
 /**
- * Resolve the real inputs from whatever the user pasted. Two phases:
+ * Resolve the real inputs from whatever the user pasted.
  *  1. If we were handed a page — especially an aggregator like a Devpost
- *     submission — crawl it to discover the GitHub repo + the actual deployed
- *     app URL hiding inside it (and a description as a fallback).
- *  2. If we now have a repo, derive a description (+ demo URL) from it so the
- *     Market/PM and live-page skills can engage.
+ *     submission — crawl it for the GitHub repo + the actual deployed app URL
+ *     hiding inside it, and keep the page's own description as a fallback.
+ *  2. If we now have a repo, derive a (richer) description + demo URL from it.
+ *  3. Description priority: repo README → aggregator page → weak typed text, so
+ *     framing like "analyse this" never wins over the real product story.
  * Every step is best-effort: enrichment never breaks a run.
  */
 export async function enrichInputs(inputs: RunInputs): Promise<RunInputs> {
   let out: RunInputs = { ...inputs };
-  if (out.url) out = await enrichFromUrl(out);
-  if (out.repo) out = await enrichFromRepo(out);
+  let pageDesc: string | undefined; // aggregator page description — last-resort fallback
+
+  if (out.url) {
+    const crawled = await enrichFromUrl(out);
+    out = crawled.inputs;
+    pageDesc = crawled.pageDesc;
+  }
+  // The repo README is the richest source — try it when we have a repo and the
+  // description is still weak (or we couldn't find a live URL yet).
+  if (out.repo && (weakDescription(out.description) || !out.url)) {
+    out = await enrichFromRepo(out);
+  }
+  // Fall back to the aggregator page's own description if nothing better stuck.
+  if (weakDescription(out.description) && pageDesc) out.description = pageDesc;
   return out;
 }
 
-/** Crawl a given page for the repo + real deploy URL. Swaps an aggregator URL for the real app. */
-async function enrichFromUrl(inputs: RunInputs): Promise<RunInputs> {
+/**
+ * Crawl a given page for the repo + real deploy URL. Swaps an aggregator URL for
+ * the real app, and returns the page's own description as a fallback.
+ */
+async function enrichFromUrl(inputs: RunInputs): Promise<{ inputs: RunInputs; pageDesc?: string }> {
   const url = inputs.url!;
   const isAggregator = AGGREGATOR.test(hostOf(url));
   // A normal product page we already have a repo for has nothing to add.
-  if (!isAggregator && inputs.repo) return inputs;
+  if (!isAggregator && inputs.repo) return { inputs };
 
   try {
     const html = await fetchRawHtml(url);
-    if (!html) return inputs;
+    if (!html) return { inputs };
     const out = { ...inputs };
     if (!out.repo) {
       const repo = findRepoLink(html);
       if (repo) out.repo = repo;
     }
+    let pageDesc: string | undefined;
     if (isAggregator) {
       // The submission page isn't the product — point the live-page skills at
       // the real app (undefined → they skip cleanly with a clear reason).
       out.url = findDeployLink(html, url);
-      // Seed a description from the submission only if the repo won't supply one.
-      if (!out.repo && weakDescription(out.description)) {
-        const d = pageDescription(html);
-        if (d) out.description = d;
-      }
+      // Always capture the page's own description; used later only if the repo
+      // doesn't supply something better.
+      pageDesc = pageDescription(html);
     }
-    return out;
+    return { inputs: out, pageDesc };
   } catch {
-    return inputs;
+    return { inputs };
   }
 }
 
-/** Fill missing description/url from the repo. No-op when both are present. */
+/** Fill a weak description + missing demo URL from the repo README. */
 async function enrichFromRepo(inputs: RunInputs): Promise<RunInputs> {
-  if (!weakDescription(inputs.description) && inputs.url) return inputs;
   try {
     const r = await getTools().readRepo(inputs.repo!);
     const out = { ...inputs };

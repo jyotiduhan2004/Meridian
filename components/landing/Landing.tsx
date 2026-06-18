@@ -99,7 +99,7 @@ function Nav() {
 // ── Hero ─────────────────────────────────────────────────────────────────────
 function Hero() {
   return (
-    <header id="top" className="relative mx-auto max-w-4xl px-5 pt-16 pb-10 text-center sm:pt-24">
+    <header id="top" className="relative mx-auto max-w-6xl px-5 pt-16 pb-10 text-center sm:px-8 sm:pt-24">
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -110,21 +110,26 @@ function Hero() {
           <span className="text-accent">⊕</span> your product team, on demand
         </span>
 
-        <h1 className="max-w-3xl text-4xl font-bold leading-[1.08] sm:text-6xl">
+        <h1 className="max-w-4xl text-4xl font-bold leading-[1.08] sm:text-6xl">
           Find every flaw <span className="text-gradient">before your users</span>
           <br className="hidden sm:block" /> — and investors — do.
         </h1>
 
-        <p className="mt-6 max-w-xl text-lg text-muted">
+        <p className="mt-6 max-w-2xl text-lg text-muted">
           Paste your product. A team of specialist agents tears it apart in parallel — grounded in
           your real code and live pages — then makes you defend it.
         </p>
 
-        <div className="mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <div className="mt-8 flex flex-nowrap items-center justify-center gap-x-4 sm:gap-x-5">
           {ROSTER.map((p) => (
-            <span key={p.callsign} className="flex items-center gap-1.5">
+            <span key={p.callsign} className="group relative flex items-center gap-1.5">
               <CallsignBadge callsign={p.callsign} color={p.color} />
-              <span className="mono text-xs tracking-wider text-muted">{p.label}</span>
+              <span className="mono hidden text-xs tracking-wider text-muted sm:inline">{p.label}</span>
+              {/* hover description */}
+              <span className="glass pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-52 -translate-x-1/2 translate-y-1 rounded-xl p-3 text-left opacity-0 transition duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                <span className="block text-sm font-semibold" style={{ color: p.color }}>{p.role}</span>
+                <span className="mt-1 block text-xs leading-snug text-muted">{CHECKS[p.callsign]}</span>
+              </span>
             </span>
           ))}
         </div>
