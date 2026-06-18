@@ -50,9 +50,10 @@ const asStance = (s?: string): Stance => {
   return "n/a";
 };
 
-// Strip markdown fences / surrounding prose, then parse the JSON object. Models
-// occasionally emit JSON with trailing commas (`,}` / `,]`), which is invalid —
-// retry once with those stripped before giving up.
+// Strip markdown fences / surrounding prose, then parse the JSON object, trying
+// progressively harder repairs for the common ways models break JSON: trailing
+// commas (`,}` / `,]`) and literal control chars (raw newlines/tabs inside string
+// values, the usual cause of "Expected ',' or '}'").
 function parseAnalysis(raw: string): unknown {
   let t = raw.trim();
   if (t.startsWith("```")) t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -61,11 +62,20 @@ function parseAnalysis(raw: string): unknown {
     const b = t.lastIndexOf("}");
     if (a !== -1 && b > a) t = t.slice(a, b + 1);
   }
-  try {
-    return JSON.parse(t);
-  } catch {
-    return JSON.parse(t.replace(/,(\s*[}\]])/g, "$1"));
+  const noTrailingCommas = (s: string) => s.replace(/,(\s*[}\]])/g, "$1");
+  // Collapse raw control characters (literal newlines/tabs inside string values).
+  const stripControlChars = (s: string) =>
+    Array.from(s, (c) => (c.charCodeAt(0) < 32 ? " " : c)).join("");
+  const attempts = [t, noTrailingCommas(t), stripControlChars(noTrailingCommas(t))];
+  let lastErr: unknown;
+  for (const candidate of attempts) {
+    try {
+      return JSON.parse(candidate);
+    } catch (e) {
+      lastErr = e;
+    }
   }
+  throw lastErr;
 }
 
 // Market skills that benefit from live web search.
@@ -75,8 +85,9 @@ const SEARCH_SKILLS = new Set([
   "assess-pricing",
   "check-discoverability",
 ]);
-// Skills that need to *see* the page — a live screenshot is attached as a vision image.
-const VISION_SKILLS = new Set(["audit-visual-ux", "walk-user-journey"]);
+// Skills that need to *see* the page — a live screenshot is attached as a vision
+// image (cached per URL, so they share one capture).
+const VISION_SKILLS = new Set(["audit-visual-ux", "walk-user-journey", "audit-performance"]);
 // Skills that assess link/route health — give them REAL fetched link statuses so
 // they don't invent "404" for routes they never visited.
 const LINK_CHECK_SKILLS = new Set(["check-api-health", "walk-user-journey"]);
@@ -196,14 +207,25 @@ export async function runSkill(skillId: string, inputs: RunInputs): Promise<Skil
 
   try {
     const evidence = await gatherEvidence(meta, inputs);
-    const raw = await provider.complete({
+    const req = {
       system,
       prompt: buildPrompt(body, inputs, evidence.text),
       images: evidence.images.length ? evidence.images : undefined,
       json: true,
       meta: { skillId, specialist: meta.specialist },
-    });
-    const a = AnalysisSchema.parse(parseAnalysis(raw));
+    };
+    // One retry if the model's first reply can't be parsed — a formatting slip
+    // shouldn't cost the whole specialist check.
+    const a = await (async () => {
+      try {
+        return AnalysisSchema.parse(parseAnalysis(await provider.complete(req)));
+      } catch {
+        const strictPrompt =
+          req.prompt +
+          "\n\nIMPORTANT: Your previous reply could not be parsed. Return ONLY a single valid JSON object — no markdown fences — and properly escape all quotes and newlines inside string values.";
+        return AnalysisSchema.parse(parseAnalysis(await provider.complete({ ...req, prompt: strictPrompt })));
+      }
+    })();
     return {
       skillId,
       specialist: meta.specialist,

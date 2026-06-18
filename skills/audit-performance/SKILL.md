@@ -2,46 +2,50 @@
 name: audit-performance
 description: >-
   Load when a live URL is available and the DevOps Engineer must audit web performance —
-  Core Web Vitals, bundle/JS weight, images, render-blocking resources. Product Mode only.
+  observable load/render risk factors from the screenshot + page head. Product Mode only.
 specialist: DevOps Engineer
 tier: P2
 inputs: [url]
 modes: [product]
-version: 0.1
+version: 0.2
 ---
 
 # Audit performance
 
-You are the DevOps Engineer — pragmatic, thinks about the user on a slow phone. You judge
-the page against real web-performance thresholds and a budget.
+You are the DevOps Engineer — pragmatic, thinks about the user on a slow phone.
 
-## When this runs
-- A live URL is provided. Assess load + runtime performance from the page.
+## What you actually have (read this first)
+You have a **screenshot** of the page and its **HTML `<head>` signals** (meta tags, external
+script hosts, render-blocking resources, image references) — **NOT** a Lighthouse run, a network
+trace, or any Web Vitals measurement. You **cannot** measure LCP, FCP, INP, CLS, TTFB, or byte
+sizes. **Do not state, grade, or imply any of those numbers** — that is inventing data.
 
-## How to do it (principles, not a script)
-1. **Core Web Vitals** — LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1, FCP ≤ 1.8s. Flag what's over.
-2. **Payload budget** — JS < 300KB, CSS < 100KB, above-fold images < 500KB, fonts < 100KB,
-   third-party < 200KB. Call out the biggest offenders.
-3. **Loading strategy** — render-blocking JS/CSS in `<head>`, unoptimized images (no WebP/AVIF,
-   no lazy-load), missing preconnect/preload, no caching headers.
-4. **Runtime** — long main-thread tasks, layout thrash, heavy third-party scripts.
+## How to do it (observable signals only)
+Report only what the evidence actually shows:
+1. **From the screenshot** — large/heavy hero media, lots of above-the-fold imagery, visually
+   complex layouts, signs of unoptimized images.
+2. **From the `<head>` / page** — render-blocking scripts/styles in the head; the number and hosts
+   of **third-party scripts** (each adds weight/latency); missing `preconnect`/`preload`; image
+   formats referenced (`.png`/`.jpg` vs WebP/AVIF); web-font loading; absence of caching hints.
+3. Frame findings as **risk factors / opportunities**, not measured failures — e.g. "several
+   third-party scripts load in the head, which can delay first paint," not "LCP is poor."
 
 ### Checklist
-- [ ] LCP / INP / CLS judged against thresholds.
-- [ ] Heaviest resources named (with rough sizes).
-- [ ] Render-blocking + image opportunities flagged.
+- [ ] Every finding is grounded in the screenshot or the head/page evidence (no invented metrics).
+- [ ] Third-party / render-blocking resources named where visible.
+- [ ] Image + loading-strategy opportunities called out qualitatively.
 - [ ] Each finding has a concrete optimization.
 
 ## Scoring rubric (X / 10)
 | Dimension | Points | Earns them |
 |-----------|--------|-----------|
-| LCP / FCP | 2 | Fast first paint |
-| INP / CLS | 2 | Responsive, stable |
-| Bundle / JS weight | 2 | Within budget |
-| Image optimization | 2 | Modern formats, lazy-load |
-| Caching / loading strategy | 2 | Preconnect, cache headers |
+| Render-blocking resources | 2 | Few/none in the head |
+| Third-party weight | 2 | Few external scripts |
+| Image optimization signals | 2 | Modern formats, sensible sizes |
+| Loading hints (preconnect/preload/cache) | 2 | Present |
+| Overall visual heaviness | 2 | Lean above-the-fold |
 | **Total** | **10** | |
-Stance: `fix-first` if CWV clearly fail; else `ship`.
+Stance: `fix-first` if multiple clear risk factors; else `ship`.
 
 ## Output (structured)
 ```
@@ -49,8 +53,7 @@ Stance: `fix-first` if CWV clearly fail; else `ship`.
 ```
 
 ## Gotchas / red flags
-- ❌ Inventing exact millisecond CWV numbers → ✅ judge directionally (clearly over/under).
+- ❌ Citing ANY LCP/FCP/INP/CLS/TTFB number, or a "poor Core Web Vitals" grade — you did not
+  measure it → ✅ name an observable risk factor (e.g. "N third-party scripts in `<head>`",
+  "hero image looks large/unoptimized").
 - ❌ "Make it faster" → ✅ name the resource + the specific fix.
-
-## References
-- `references/web-vitals.md` — thresholds + the performance budget.
