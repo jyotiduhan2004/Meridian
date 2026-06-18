@@ -19,6 +19,7 @@
   /* deep navy gradient stops for hero / section washes */
   --navy-1: #0a1322;
   --navy-2: #0b1d38;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -182,6 +183,7 @@ html[data-theme="light"] {
   --glass-border: rgba(20, 50, 90, 0.12);
   --navy-1: #dde8f6;
   --navy-2: #d2e1f3;
+  color-scheme: light;
 }
 html[data-theme="light"] body {
   background-image:
