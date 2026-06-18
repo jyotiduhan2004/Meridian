@@ -31,9 +31,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${poppins.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
+        {/* Set the saved theme before paint to avoid a flash (dark is default). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('meridian-theme')==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

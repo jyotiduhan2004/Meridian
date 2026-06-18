@@ -7,6 +7,7 @@ import { personaFor } from "@/lib/personas";
 import { trackEvent } from "@/lib/track";
 import type { SkillEnvelope } from "@/lib/schema";
 import { CallsignBadge, ChannelBar, Panel, ScoreRing, SeverityTag, StatusLine } from "@/components/hud";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type Verdict = {
   meridianScore: number;
@@ -156,6 +157,7 @@ export default function ReportClient({ id }: { id: string }) {
             <Wordmark className="text-sm" />
           </Link>
           <div className="ml-auto flex items-center gap-3.5">
+            <ThemeToggle />
             {verdict ? (
               <>
                 <ScoreRing score={verdict.meridianScore} color={VERDICT_RING[verdict.verdict]} size={56} />

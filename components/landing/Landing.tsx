@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import Intake from "@/components/Intake";
+import ThemeToggle from "@/components/ThemeToggle";
 import { CallsignBadge, StatusLine } from "@/components/hud";
 import { PERSONAS } from "@/lib/personas";
 
@@ -84,13 +85,16 @@ function Nav() {
             </a>
           ))}
         </div>
-        <a
-          href="#intake"
-          className="pill bg-accent px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110"
-          style={{ boxShadow: "0 0 22px -6px var(--accent)" }}
-        >
-          Run the team →
-        </a>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <a
+            href="#intake"
+            className="pill bg-accent px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110"
+            style={{ boxShadow: "0 0 22px -6px var(--accent)" }}
+          >
+            Run the team →
+          </a>
+        </div>
       </div>
     </nav>
   );
