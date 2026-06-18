@@ -110,8 +110,8 @@ function Hero() {
         transition={{ duration: 0.55, ease: "easeOut" }}
         className="flex flex-col items-center"
       >
-        <span className="glass pill mb-7 px-4 py-1.5 text-xs text-muted">
-          <span className="text-accent">⊕</span> your product team, on demand
+        <span className="glass pill mb-7 inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium tracking-wide text-muted">
+          <span className="text-accent">⊕</span> Your Product Team, On Demand
         </span>
 
         <h1 className="max-w-4xl text-4xl font-bold leading-[1.08] sm:text-6xl">
