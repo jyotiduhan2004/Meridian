@@ -184,7 +184,10 @@ export default function Intake() {
 
           {/* specialist selection */}
           <div className="mt-4">
-            <p className="mono mb-2 text-xs uppercase tracking-wider text-muted">specialists to run</p>
+            <p className="mono mb-1 text-xs uppercase tracking-wider text-muted">specialists to run</p>
+            <p className="mb-2 text-[11px] text-muted">
+              Tap to include or exclude — deselected specialists are skipped and their weight is redistributed.
+            </p>
             <div className="flex flex-wrap gap-1.5">
               {SPECIALISTS.map(([key, p]) => {
                 const on = chosen.has(key);
@@ -192,14 +195,18 @@ export default function Intake() {
                   <button
                     key={key}
                     type="button"
+                    aria-pressed={on}
                     onClick={() => toggleSpecialist(key)}
-                    className={`pill flex items-center gap-1.5 border px-2.5 py-1 text-xs transition ${on ? "" : "opacity-45 hover:opacity-70"}`}
+                    className={`pill flex cursor-pointer items-center gap-1.5 border px-2.5 py-1 text-xs transition hover:scale-105 ${
+                      on ? "" : "opacity-55 hover:opacity-90"
+                    }`}
                     style={{
-                      borderColor: on ? `${p.color}66` : "var(--border)",
-                      background: on ? `${p.color}14` : "transparent",
+                      borderColor: on ? `${p.color}88` : "var(--border)",
+                      background: on ? `${p.color}1f` : "transparent",
                       color: on ? p.color : "var(--muted)",
                     }}
                   >
+                    <span aria-hidden className="text-[10px] leading-none">{on ? "✓" : "+"}</span>
                     <span className="mono font-semibold">{p.callsign}</span>
                     <span className="mono tracking-wide">{p.label}</span>
                   </button>

@@ -4,6 +4,34 @@ import type { PageFetch } from "./index";
 // Used by the url-based skills (UX copy, discoverability, launch readiness, etc.)
 // for text grounding; live screenshots come later via Browserless.
 
+// Look like a real browser so alive-but-picky sites don't 403/refuse us.
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
+async function fetchOnce(url: string, timeoutMs: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { headers: BROWSER_HEADERS, signal: ctrl.signal, redirect: "follow" });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// One retry on a thrown fetch (transient network/timeout) before giving up — so a
+// reachable site doesn't get falsely marked "no response".
+async function fetchWithRetry(url: string, timeoutMs = 14000): Promise<Response> {
+  try {
+    return await fetchOnce(url, timeoutMs);
+  } catch {
+    return await fetchOnce(url, timeoutMs);
+  }
+}
+
 function htmlToText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -36,14 +64,7 @@ function metaDescription(html: string): string | null {
 // github/CDN links inside <script>) doesn't pollute extraction.
 export async function fetchRawHtml(url: string): Promise<string> {
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12000);
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; meridian-review/0.1)", Accept: "text/html" },
-      signal: ctrl.signal,
-      redirect: "follow",
-    });
-    clearTimeout(timer);
+    const res = await fetchWithRetry(url);
     const html = await res.text();
     return html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -57,14 +78,7 @@ export async function fetchRawHtml(url: string): Promise<string> {
 
 export async function fetchRealPage(url: string): Promise<PageFetch> {
   try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 12000);
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; meridian-review/0.1)", Accept: "text/html" },
-      signal: ctrl.signal,
-      redirect: "follow",
-    });
-    clearTimeout(timer);
+    const res = await fetchWithRetry(url);
     const html = await res.text();
     const title = titleOf(html);
     const desc = metaDescription(html);

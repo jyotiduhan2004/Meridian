@@ -110,12 +110,30 @@ function pageDescription(html: string): string | undefined {
   return d || undefined;
 }
 
-/** The first deployed-app URL written in free text (skips GitHub + badge links). */
-function firstAppUrl(text: string): string | undefined {
+// Hosts that are never the product's own deployed app.
+const NON_APP_HOST =
+  /(github\.com|githubusercontent|shields\.io|youtube\.com|youtu\.be|google\.com|gmail\.com|example\.(com|org)|localhost|w3\.org|mozilla\.org|npmjs\.com)/i;
+// A bare domain written in prose, e.g. "deployed at myapp.io". The leading
+// boundary avoids matching inside emails (user@host).
+const BARE_DOMAIN =
+  /(?:^|[\s:=(])((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24})((?:\/[^\s)]*)?)/gi;
+
+/**
+ * A deployed-app URL written in free text — an explicit http(s) link first, then
+ * a bare domain (so "the deployed url is myapp.io" is honored even without the
+ * scheme). GitHub/badge/asset links are skipped.
+ */
+function urlFromText(text: string): string | undefined {
   for (const m of text.matchAll(/https?:\/\/[^\s)\]"'<>]+/gi)) {
     const u = m[0].replace(/[).,;]+$/, "");
-    if (/github\.com/i.test(u) || BADGE.test(u)) continue;
-    return u;
+    if (!NON_APP_HOST.test(u) && !BADGE.test(u)) return u;
+  }
+  for (const m of text.matchAll(BARE_DOMAIN)) {
+    const host = m[1].toLowerCase();
+    const path = (m[2] ?? "").replace(/[).,;]+$/, "");
+    if (NON_APP_HOST.test(host)) continue;
+    if (/\.(png|jpe?g|svg|gif|md|js|tsx?|css|json|py|txt|pdf|zip)$/i.test(host + path)) continue;
+    return `https://${host}${path}`;
   }
   return undefined;
 }
@@ -177,7 +195,7 @@ export async function enrichInputs(inputs: RunInputs): Promise<RunInputs> {
   // description (not the URL field), use that rather than deriving one from the
   // repo README further down.
   if (!out.url && out.description) {
-    const u = firstAppUrl(out.description);
+    const u = urlFromText(out.description);
     if (u) out.url = u;
   }
   // The repo README is the richest source — try it when we have a repo and the
