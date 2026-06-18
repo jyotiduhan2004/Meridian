@@ -26,6 +26,16 @@ export async function sbUpsert(table: string, rows: unknown, onConflict: string)
   if (!res.ok) throw new Error(`supabase upsert ${table} ${res.status}: ${await res.text()}`);
 }
 
+/** Partial update of existing rows (PATCH) — won't trip NOT NULL on unsent columns. */
+export async function sbUpdate(table: string, filter: string, patch: unknown): Promise<void> {
+  const res = await fetch(`${rest(table)}?${filter}`, {
+    method: "PATCH",
+    headers: { ...headers(), Prefer: "return=minimal" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`supabase update ${table} ${res.status}: ${await res.text()}`);
+}
+
 export async function sbInsert(table: string, rows: unknown): Promise<void> {
   const res = await fetch(rest(table), {
     method: "POST",

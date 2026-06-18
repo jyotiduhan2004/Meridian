@@ -50,7 +50,9 @@ const asStance = (s?: string): Stance => {
   return "n/a";
 };
 
-// Strip markdown fences / surrounding prose, then parse the JSON object.
+// Strip markdown fences / surrounding prose, then parse the JSON object. Models
+// occasionally emit JSON with trailing commas (`,}` / `,]`), which is invalid —
+// retry once with those stripped before giving up.
 function parseAnalysis(raw: string): unknown {
   let t = raw.trim();
   if (t.startsWith("```")) t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -59,7 +61,11 @@ function parseAnalysis(raw: string): unknown {
     const b = t.lastIndexOf("}");
     if (a !== -1 && b > a) t = t.slice(a, b + 1);
   }
-  return JSON.parse(t);
+  try {
+    return JSON.parse(t);
+  } catch {
+    return JSON.parse(t.replace(/,(\s*[}\]])/g, "$1"));
+  }
 }
 
 // Market skills that benefit from live web search.

@@ -1,5 +1,5 @@
 import { RunInputs, SkillEnvelope, Mode } from "@/lib/schema";
-import { supabaseConfigured, sbUpsert, sbInsert, sbSelect } from "@/lib/supabase";
+import { supabaseConfigured, sbUpsert, sbUpdate, sbInsert, sbSelect } from "@/lib/supabase";
 
 export type RunEvent = { t: number; type: string; skillId?: string };
 
@@ -193,7 +193,7 @@ class SupabaseRunStore implements RunStore {
     await safe(
       "setVerdict",
       Promise.all([
-        sbUpsert("runs", { id, verdict: v }, "id"),
+        sbUpdate("runs", `id=eq.${id}`, { verdict: v }),
         sbInsert("run_events", { run_id: id, t, type: "verdict.ready", skill_id: null }),
       ]),
     );
