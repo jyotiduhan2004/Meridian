@@ -50,6 +50,7 @@ Stance: `block` if an unauthenticated sensitive endpoint or data leak is found.
 - ❌ Actually attacking/brute-forcing the live site → ✅ infer from normal responses only.
 - ❌ Assuming a public endpoint is a leak → ✅ judge by whether the data is sensitive.
 - ❌ Reporting without the endpoint → ✅ name the route + what it exposed.
+- ❌ Raising a high finding on something "not provided in the evidence" / "not possible to verify" → ✅ omit it or mark it a low "worth checking" — don't assert unconfirmed risk as high.
 
 ## References
 - `references/api-authz.md` — BOLA/BOPLA/mass-assignment patterns and safe inference.

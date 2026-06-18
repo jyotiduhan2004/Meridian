@@ -52,6 +52,7 @@ Stance: `block` on any critical (injection / authz bypass), else `fix-first` or 
 - ❌ Flagging theoretical issues with no code path → ✅ cite the vulnerable `file:line`.
 - ❌ Treating authN as authZ → ✅ check that *authorization* is enforced per object.
 - ❌ Style nits as "critical" → ✅ reserve `critical` for exploitable holes.
+- ❌ Raising a high/critical finding on a pattern you can't actually see ("based on general structure", "specific checks not visible in the snippets") → ✅ if it isn't confirmed in the provided code, downgrade to a low "worth verifying" or omit it — don't assert unconfirmed risk.
 
 ## References
 - `references/owasp-top10.md` — the checklist per category with examples.

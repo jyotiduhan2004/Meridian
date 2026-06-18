@@ -130,12 +130,13 @@ async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<Evide
                 ? "REACHABLE (auth-gated — requires login, NOT broken)"
                 : l.klass === "broken"
                   ? "BROKEN (404/410)"
-                  : "could not verify (network/timeout)";
+                  : "could not verify — our checker timed out (NOT evidence the page is broken)";
           return `- ${l.href} → HTTP ${l.status} · ${label}`;
         })
         .join("\n");
       parts.push(
-        `## Internal link check (real fetched statuses — trust these over any guess)\n${fmt}`,
+        `## Internal link check (real fetched statuses — trust these over any guess)\n${fmt}\n` +
+          `Only "BROKEN (404/410)" is a dead route. "could not verify" means OUR checker timed out — do NOT report those as broken/unreachable.`,
       );
     } else {
       parts.push(
@@ -166,7 +167,7 @@ function buildPrompt(body: string, inputs: RunInputs, evidence: string): string 
 
   const today = new Date().toISOString().slice(0, 10);
   return [
-    `Today's date is ${today} — treat its year as the CURRENT year (never flag a current-year date, e.g. a copyright year, as "in the future").`,
+    `Today's date is ${today}; treat its year as the CURRENT year. A copyright year equal to the current year is CORRECT and normal — do NOT flag it at all (not even as low), and never call a current-or-recent year "in the future".`,
     "Run the skill below on the project and return ONLY a JSON object with keys:",
     "score (0-10 number), stance (EXACTLY one of: block | fix-first | ship | n/a),",
     "rubricBreakdown ([{dimension, max, earned}]),",

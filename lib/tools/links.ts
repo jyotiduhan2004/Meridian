@@ -17,6 +17,48 @@ const normPath = (u: string): string => {
   }
 };
 
+// One fetch attempt with a generous timeout; returns null on abort/network error.
+async function fetchStatus(url: string): Promise<{ status: number; finalUrl: string } | null> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    const res = await fetch(url, { headers: BROWSER_HEADERS, redirect: "follow", signal: ctrl.signal });
+    return { status: res.status, finalUrl: res.url || url };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkOne(path: string, abs: string): Promise<LinkCheck> {
+  // One retry — a single transient timeout shouldn't read as a dead page.
+  const r = (await fetchStatus(abs)) ?? (await fetchStatus(abs));
+  if (!r) return { href: path, status: 0, finalUrl: abs, klass: "error" };
+  const redirectedToLogin =
+    normPath(r.finalUrl) !== normPath(abs) && LOGIN_PATH.test(normPath(r.finalUrl));
+  let klass: LinkClass;
+  if (r.status === 401 || r.status === 403 || redirectedToLogin) klass = "auth";
+  else if (r.status >= 200 && r.status < 400) klass = "ok";
+  else if (r.status === 404 || r.status === 410) klass = "broken";
+  else klass = "error";
+  return { href: path, status: r.status, finalUrl: r.finalUrl, klass };
+}
+
+// Bounded-concurrency map so we don't burst a small site into timeouts.
+async function pool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const idx = next++;
+      results[idx] = await fn(items[idx]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export async function checkLinks(url: string): Promise<LinkCheck[]> {
   const html = await fetchRawHtml(url);
   if (!html) return [];
@@ -42,29 +84,9 @@ export async function checkLinks(url: string): Promise<LinkCheck[]> {
     const path = abs.pathname.replace(/\/$/, "") || "/";
     if (path === "/") continue;
     if (!targets.has(path)) targets.set(path, abs.toString());
-    if (targets.size >= 15) break;
+    if (targets.size >= 10) break;
   }
 
-  const results = await Promise.all(
-    [...targets.entries()].map(async ([path, abs]): Promise<LinkCheck> => {
-      try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 9000);
-        const res = await fetch(abs, { headers: BROWSER_HEADERS, redirect: "follow", signal: ctrl.signal });
-        clearTimeout(timer);
-        const finalUrl = res.url || abs;
-        const redirectedToLogin = normPath(finalUrl) !== normPath(abs) && LOGIN_PATH.test(normPath(finalUrl));
-        let klass: LinkClass;
-        if (res.status === 401 || res.status === 403 || redirectedToLogin) klass = "auth";
-        else if (res.status >= 200 && res.status < 400) klass = "ok";
-        else if (res.status === 404 || res.status === 410) klass = "broken";
-        else klass = "error";
-        return { href: path, status: res.status, finalUrl, klass };
-      } catch {
-        return { href: path, status: 0, finalUrl: abs, klass: "error" };
-      }
-    }),
-  );
-
+  const results = await pool([...targets.entries()], 5, ([path, abs]) => checkOne(path, abs));
   return results.sort((a, b) => a.href.localeCompare(b.href));
 }

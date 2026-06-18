@@ -58,5 +58,7 @@ Stance: `block` only if entry routes are genuinely broken (per the link check); 
 
 ## Gotchas / red flags
 - ❌ Claiming a link/CTA "leads to a 404" or "is broken" from the screenshot → ✅ only from the link-check evidence; auth-gated ≠ broken.
+- ❌ Treating a link marked "could not verify (timeout)" as broken/unreachable → ✅ that's our checker timing out, not a dead page — a low "couldn't verify" note at most.
 - ❌ Saying on-screen text "is not clickable", a form "doesn't validate", or an external video "is unavailable" — you cannot verify any of these → ✅ mark "could not verify".
+- ❌ Flagging a copyright year that equals the current year as "in the future"/wrong → ✅ a current-year copyright is correct; don't flag it.
 - ❌ Inventing journey steps you didn't observe → ✅ judge only the screenshot + the link statuses.
