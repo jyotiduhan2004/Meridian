@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     verdict: null,
     createdAt: Date.now(),
   };
-  store.create(run);
+  await store.create(run);
 
   return NextResponse.json({
     runId: id,

@@ -11,14 +11,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string; skillId: string }> },
 ) {
   const { id, skillId } = await params;
-  const run = store.get(id);
+  const run = await store.get(id);
   if (!run) return NextResponse.json({ error: "run not found" }, { status: 404 });
 
   const pending = run.skills[skillId];
-  if (pending) store.putSkill(id, { ...pending, status: "running" });
+  if (pending) await store.putSkill(id, { ...pending, status: "running" });
 
   const env = await runSkill(skillId, run.inputs);
-  store.putSkill(id, env);
+  await store.putSkill(id, env);
 
   return NextResponse.json(env);
 }

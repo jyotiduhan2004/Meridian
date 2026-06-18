@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { store } from "@/lib/store";
+import { store, Run } from "@/lib/store";
 import { getProvider } from "@/lib/llm";
 
 export const runtime = "nodejs";
@@ -9,7 +9,7 @@ type Turn = { who: "investor" | "you"; text: string };
 
 // Build a grounded brief from the real run so THE INVESTOR challenges THIS
 // project, not a generic startup it invents.
-function projectBrief(run: ReturnType<typeof store.get>): string {
+function projectBrief(run: Run | undefined): string {
   if (!run) return "(project unavailable)";
   const desc = run.inputs?.description?.slice(0, 900) || "(no written description — infer from the findings)";
   const v = run.verdict;
@@ -28,7 +28,7 @@ function projectBrief(run: ReturnType<typeof store.get>): string {
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const run = store.get(id);
+  const run = await store.get(id);
   if (!run) return NextResponse.json({ error: "run not found" }, { status: 404 });
 
   const { answer = "", history = [] } = await req
