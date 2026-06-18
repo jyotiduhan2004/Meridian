@@ -68,6 +68,15 @@ export function Wordmark({ className = "" }: { className?: string }) {
   );
 }
 
+function Spinner() {
+  return (
+    <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function ReportClient({ id }: { id: string }) {
   const [run, setRun] = useState<Run | null>(null);
   const [verdict, setVerdict] = useState<Verdict | null>(null);
@@ -282,18 +291,23 @@ function Overview({
       </Panel>
     );
   }
-  const deadDeploy = run.skipped.find((s) => /unreachable/i.test(s.reason));
+  const blocker = run.skipped.find((s) => /unreachable|behind a login/i.test(s.reason));
+  const isLogin = !!blocker && /behind a login/i.test(blocker.reason);
   return (
     <div className="space-y-7">
-      {/* deploy unreachable — one clear banner instead of N duplicate 404 findings */}
-      {deadDeploy && (
+      {/* one clear banner when the live URL couldn't be analyzed (dead or login-gated) */}
+      {blocker && (
         <motion.div {...reveal(0)}>
           <div className="rounded-lg border border-orange-400/40 bg-orange-400/5 p-5">
-            <p className="mono mb-1 text-sm font-semibold tracking-wider text-orange-400">⚠ DEPLOY UNREACHABLE</p>
+            <p className="mono mb-1 text-sm font-semibold tracking-wider text-orange-400">
+              {isLogin ? "⚠ LOGIN REQUIRED" : "⚠ DEPLOY UNREACHABLE"}
+            </p>
             <p className="text-sm text-muted">
-              {deadDeploy.reason}. The live-page review is paused — scoring reflects only what the team could
-              actually assess (repo, market &amp; product). Re-run once the URL is live for the UX, journey, and
-              performance review.
+              {blocker.reason}. The live-page review is paused — scoring reflects only what the team could
+              actually assess (repo, market &amp; product), with weights redistributed.{" "}
+              {isLogin
+                ? "Add a test login in the confirm step and re-run for the UX, journey, and performance review."
+                : "Re-run once the URL is live for the UX, journey, and performance review."}
             </p>
           </div>
         </motion.div>
@@ -314,7 +328,13 @@ function Overview({
       {/* channel scores */}
       {verdict.scoreBreakdown.length > 0 && (
         <motion.section {...reveal(1)}>
-          <h2 className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">channel scores</h2>
+          <h2 className="mono mb-1 text-xs uppercase tracking-[0.2em] text-muted">channel scores</h2>
+          {verdict.scoreBreakdown.length < 6 && (
+            <p className="mb-3 text-xs text-muted">
+              Scored across {verdict.scoreBreakdown.length} of 6 specialists — weights redistributed across the
+              team that ran (absent specialists aren&apos;t counted as zero).
+            </p>
+          )}
           <div className="space-y-2">
             {verdict.scoreBreakdown.map((b) => {
               const p = personaFor(b.specialist);
@@ -460,21 +480,43 @@ function SkillCard({ skill, color }: { skill: SkillEnvelope; color: string }) {
       </div>
       {skill.note && <p className="mb-3 text-sm text-muted">{skill.note}</p>}
       {skill.findings.length > 0 ? (
-        <ul className="space-y-3">
-          {skill.findings.map((f, i) => (
-            <li key={i} className="rounded-lg border border-border bg-panel-2 p-3">
-              <div className="flex items-start gap-2">
-                <SeverityTag severity={f.severity} />
-                <span className="text-sm font-medium">{f.title}</span>
-              </div>
-              {f.evidence && <p className="mono mt-2 text-xs text-muted">{f.evidence}</p>}
-              {f.fix && (
-                <p className="mt-2 text-sm" style={{ color }}>
-                  → {f.fix}
-                </p>
-              )}
-            </li>
-          ))}
+        <ul className="space-y-2">
+          {skill.findings.map((f, i) => {
+            const hasMore = !!(f.evidence || f.fix);
+            if (!hasMore) {
+              return (
+                <li key={i} className="flex items-start gap-2 rounded-lg border border-border bg-panel-2 p-3">
+                  <SeverityTag severity={f.severity} />
+                  <span className="text-sm font-medium">{f.title}</span>
+                </li>
+              );
+            }
+            return (
+              <li key={i}>
+                <details className="group rounded-lg border border-border bg-panel-2">
+                  <summary className="flex cursor-pointer list-none items-start gap-2 p-3 [&::-webkit-details-marker]:hidden">
+                    <SeverityTag severity={f.severity} />
+                    <span className="text-sm font-medium">{f.title}</span>
+                    <svg
+                      className="ml-auto mt-0.5 shrink-0 text-muted transition-transform group-open:rotate-180"
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div className="space-y-2 px-3 pb-3">
+                    {f.evidence && <p className="mono text-xs text-muted">{f.evidence}</p>}
+                    {f.fix && (
+                      <p className="text-sm" style={{ color }}>
+                        → {f.fix}
+                      </p>
+                    )}
+                  </div>
+                </details>
+              </li>
+            );
+          })}
         </ul>
       ) : working ? (
         <p className="mono text-sm text-accent cursor">scanning</p>
@@ -530,7 +572,11 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
           className="pill mono px-5 py-2.5 text-sm font-semibold tracking-wider text-background transition hover:brightness-110 disabled:opacity-40"
           style={{ background: p.color, boxShadow: `0 0 22px -6px ${p.color}` }}
         >
-          {busy ? "…" : "FACE THE INVESTOR →"}
+          {busy ? (
+            <span className="inline-flex items-center gap-2"><Spinner /> Thinking…</span>
+          ) : (
+            "FACE THE INVESTOR →"
+          )}
         </button>
       ) : (
         <div className="space-y-3">
@@ -563,10 +609,10 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
                 }
               }}
               disabled={busy || !answer.trim()}
-              className="pill mono px-5 py-2.5 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
+              className="pill mono inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
               style={{ background: p.color }}
             >
-              SEND
+              {busy ? <Spinner /> : "SEND"}
             </button>
           </div>
         </div>

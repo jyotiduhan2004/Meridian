@@ -63,6 +63,13 @@ class MemoryRunStore implements RunStore {
   }
 }
 
+// Login credentials are session-only: never write them to the database.
+function stripCredentials(inputs: RunInputs): RunInputs {
+  if (!inputs.credentials) return inputs;
+  const { credentials: _omit, ...rest } = inputs;
+  return rest;
+}
+
 // Best-effort: remote durability must never break a live (in-process) run.
 async function safe(label: string, p: Promise<unknown>): Promise<void> {
   try {
@@ -102,7 +109,7 @@ class SupabaseRunStore implements RunStore {
           {
             id: run.id,
             mode: run.mode,
-            inputs: run.inputs,
+            inputs: stripCredentials(run.inputs),
             plan: run.plan,
             skipped: run.skipped,
             verdict: run.verdict,

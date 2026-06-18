@@ -96,7 +96,7 @@ async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<Evide
     parts.push(`## Live page evidence (HTTP ${p.status})\n${p.text}`);
   }
   if (VISION_SKILLS.has(meta.name) && inputs.url) {
-    const shot = await tools.screenshot(inputs.url);
+    const shot = await tools.screenshot(inputs.url, inputs.credentials);
     if (shot.image) {
       images.push(shot.image);
       parts.push(`## Screenshot\nA live screenshot of the page is attached — judge the actual visual experience.`);

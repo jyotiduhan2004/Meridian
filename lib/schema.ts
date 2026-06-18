@@ -74,6 +74,8 @@ export type RunInputs = {
   repo?: string;
   description?: string;
   hackathonContext?: string;
+  /** Optional login for a gated URL. Session-only — never persisted to the DB. */
+  credentials?: { email: string; password: string };
 };
 export type Mode = "idea" | "product";
 

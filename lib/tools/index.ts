@@ -2,7 +2,7 @@ import { LLMImage } from "@/lib/llm/types";
 import { readGithubRepo } from "./github";
 import { fetchRealPage } from "./page";
 import { tavilySearch } from "./search";
-import { browserlessScreenshot } from "./browserless";
+import { browserlessScreenshot, browserlessLoginScreenshot } from "./browserless";
 
 // Shared tool layer. Skills request actions; this layer performs them.
 // GitHub repo read + page fetch work with no key; web search needs TAVILY_API_KEY;
@@ -22,7 +22,10 @@ export type RepoRead = {
 
 export interface Tools {
   /** screenshot a URL for the UX skill (returns a vision image when available) */
-  screenshot(url: string): Promise<{ image?: LLMImage; text?: string }>;
+  screenshot(
+    url: string,
+    creds?: { email: string; password: string },
+  ): Promise<{ image?: LLMImage; text?: string }>;
   /** fetch a page's HTML/text */
   fetchPage(url: string): Promise<PageFetch>;
   /** web search for the Market skills */
@@ -82,8 +85,12 @@ function memo<T>(map: Map<string, Promise<T>>, key: string, fn: () => Promise<T>
 const realTools: Tools = {
   // Live screenshot via Browserless when a token is set; otherwise fall back to
   // the fetched page text so the loop still runs.
-  screenshot(url) {
+  screenshot(url, creds) {
     if (process.env.BROWSERLESS_TOKEN) {
+      // Authenticated capture when credentials are supplied for a gated URL.
+      if (creds?.email && creds.password) {
+        return memo(cache.shot, `${url}|${creds.email}`, () => browserlessLoginScreenshot(url, creds));
+      }
       return memo(cache.shot, url, () => browserlessScreenshot(url));
     }
     return memo(cache.page, url, () => fetchRealPage(url)).then((p) => ({ text: p.text }));

@@ -110,6 +110,29 @@ function pageDescription(html: string): string | undefined {
   return d || undefined;
 }
 
+/** The first deployed-app URL written in free text (skips GitHub + badge links). */
+function firstAppUrl(text: string): string | undefined {
+  for (const m of text.matchAll(/https?:\/\/[^\s)\]"'<>]+/gi)) {
+    const u = m[0].replace(/[).,;]+$/, "");
+    if (/github\.com/i.test(u) || BADGE.test(u)) continue;
+    return u;
+  }
+  return undefined;
+}
+
+/** Best-effort: does this URL sit behind a login wall? (password field, or a sign-in title) */
+export async function detectLoginWall(url: string): Promise<boolean> {
+  try {
+    const html = await fetchRawHtml(url);
+    if (!html) return false;
+    if (/<input[^>]+type=["']password["']/i.test(html)) return true;
+    const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
+    return /\b(sign[\s-]?in|log[\s-]?in|login)\b/i.test(title);
+  } catch {
+    return false;
+  }
+}
+
 function findDemoUrl(readme?: string): string | undefined {
   if (!readme) return undefined;
   // 1) a markdown link whose text says "demo / live / try it / website"
@@ -149,6 +172,13 @@ export async function enrichInputs(inputs: RunInputs): Promise<RunInputs> {
     const crawled = await enrichFromUrl(out);
     out = crawled.inputs;
     pageDesc = crawled.pageDesc;
+  }
+  // An explicitly provided URL wins: if the user wrote a deployed URL in the
+  // description (not the URL field), use that rather than deriving one from the
+  // repo README further down.
+  if (!out.url && out.description) {
+    const u = firstAppUrl(out.description);
+    if (u) out.url = u;
   }
   // The repo README is the richest source — try it when we have a repo and the
   // description is still weak (or we couldn't find a live URL yet).
