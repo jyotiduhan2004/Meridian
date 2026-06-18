@@ -175,10 +175,20 @@ function ProblemSection() {
             key={p.t}
             {...reveal}
             transition={{ ...reveal.transition, delay: i * 0.08 }}
-            className="glass rounded-[20px] p-6"
+            className="glass glow-cyan rounded-[20px] p-6 transition hover:-translate-y-0.5"
+            style={{
+              backgroundImage:
+                "linear-gradient(160deg, rgba(34,211,238,0.1), rgba(56,189,248,0.04) 55%, transparent)",
+              borderColor: "rgba(34,211,238,0.22)",
+            }}
           >
-            <span className="mono text-sm text-accent">{String(i + 1).padStart(2, "0")}</span>
-            <h3 className="mt-3 text-lg font-semibold">{p.t}</h3>
+            <span
+              className="mono inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold text-accent"
+              style={{ background: "rgba(34,211,238,0.14)", boxShadow: "0 0 16px -4px var(--accent)" }}
+            >
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <h3 className="mt-4 text-lg font-semibold">{p.t}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">{p.d}</p>
           </motion.div>
         ))}
