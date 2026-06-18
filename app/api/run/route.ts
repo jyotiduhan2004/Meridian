@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { planRun } from "@/lib/orchestrator";
+import { planRun, type Preflight } from "@/lib/orchestrator";
 import { enrichInputs } from "@/lib/enrich";
+import { getTools } from "@/lib/tools";
 import { store, Run } from "@/lib/store";
 import { loadRegistry } from "@/lib/skills/registry";
 import { SkillEnvelope, RunInputs, Mode } from "@/lib/schema";
+
+// A deployed URL is "dead" (not analyzable) when it's missing, gone, or erroring.
+function urlIsDead(status: number): boolean {
+  return status === 0 || status === 404 || status === 410 || status >= 500;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +22,19 @@ export async function POST(req: NextRequest) {
   const inputs: RunInputs =
     mode === "product" ? await enrichInputs(body.inputs ?? {}) : body.inputs ?? {};
 
-  const { eligible, skipped } = planRun(inputs, mode);
+  // Pre-flight the deployed URL (memoized, so the skills reuse this fetch) so an
+  // unreachable app pauses the live-page skills with one clear reason.
+  let preflight: Preflight = {};
+  if (inputs.url) {
+    try {
+      const p = await getTools().fetchPage(inputs.url);
+      preflight = { url: { ok: !urlIsDead(p.status), status: p.status } };
+    } catch {
+      preflight = { url: { ok: false, status: 0 } };
+    }
+  }
+
+  const { eligible, skipped } = planRun(inputs, mode, preflight);
   const reg = loadRegistry();
   const specialistOf = (id: string) => reg.find((m) => m.name === id)?.specialist ?? "";
 

@@ -280,8 +280,23 @@ function Overview({
       </Panel>
     );
   }
+  const deadDeploy = run.skipped.find((s) => /unreachable/i.test(s.reason));
   return (
     <div className="space-y-7">
+      {/* deploy unreachable — one clear banner instead of N duplicate 404 findings */}
+      {deadDeploy && (
+        <motion.div {...reveal(0)}>
+          <div className="rounded-lg border border-orange-400/40 bg-orange-400/5 p-5">
+            <p className="mono mb-1 text-sm font-semibold tracking-wider text-orange-400">⚠ DEPLOY UNREACHABLE</p>
+            <p className="text-sm text-muted">
+              {deadDeploy.reason}. The live-page review is paused — scoring reflects only what the team could
+              actually assess (repo, market &amp; product). Re-run once the URL is live for the UX, journey, and
+              performance review.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
       {/* PRODUCT synthesis */}
       <motion.div {...reveal(0)}>
         <Panel className="p-6" >
