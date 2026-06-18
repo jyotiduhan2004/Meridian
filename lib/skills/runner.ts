@@ -77,6 +77,9 @@ const SEARCH_SKILLS = new Set([
 ]);
 // Skills that need to *see* the page — a live screenshot is attached as a vision image.
 const VISION_SKILLS = new Set(["audit-visual-ux", "walk-user-journey"]);
+// Skills that assess link/route health — give them REAL fetched link statuses so
+// they don't invent "404" for routes they never visited.
+const LINK_CHECK_SKILLS = new Set(["check-api-health", "walk-user-journey"]);
 
 type Evidence = { text: string; images: { mimeType: string; dataBase64: string }[] };
 
@@ -102,6 +105,31 @@ async function gatherEvidence(meta: SkillMeta, inputs: RunInputs): Promise<Evide
       parts.push(`## Screenshot\nA live screenshot of the page is attached — judge the actual visual experience.`);
     } else if (shot.text) {
       parts.push(`## Screenshot\n${shot.text}`);
+    }
+  }
+  if (LINK_CHECK_SKILLS.has(meta.name) && inputs.url) {
+    const links = await tools.checkLinks(inputs.url);
+    if (links.length) {
+      const fmt = links
+        .map((l) => {
+          const label =
+            l.klass === "ok"
+              ? "OK"
+              : l.klass === "auth"
+                ? "REACHABLE (auth-gated — requires login, NOT broken)"
+                : l.klass === "broken"
+                  ? "BROKEN (404/410)"
+                  : "could not verify (network/timeout)";
+          return `- ${l.href} → HTTP ${l.status} · ${label}`;
+        })
+        .join("\n");
+      parts.push(
+        `## Internal link check (real fetched statuses — trust these over any guess)\n${fmt}`,
+      );
+    } else {
+      parts.push(
+        `## Internal link check\nNo internal links could be fetched/verified — do NOT claim any route is broken.`,
+      );
     }
   }
   if (SEARCH_SKILLS.has(meta.name) && inputs.description) {
@@ -132,6 +160,7 @@ function buildPrompt(body: string, inputs: RunInputs, evidence: string): string 
     "findings ([{title, severity(critical|high|medium|low|nit), evidence, fix, effort(easy|medium|hard)}]),",
     "note (optional string).",
     "Base every finding on the EVIDENCE below — cite file paths / specifics. Do not invent facts.",
+    "NEVER claim an HTTP status, a broken/404 link, or a click-through/navigation result unless the EVIDENCE explicitly shows it (e.g. the internal link check). A route that requires login or redirects to a sign-in page is REACHABLE, not broken. Do not assert measured metrics you weren't given. If it's not in the evidence, don't state it.",
     "",
     "=== SKILL ===",
     body.slice(0, 6000),

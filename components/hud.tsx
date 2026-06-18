@@ -6,11 +6,11 @@ import { animate } from "motion/react";
 // ── Shared HUD primitives for the war-room UI ──────────────────────────────
 
 export const SEV_CLASS: Record<string, string> = {
-  critical: "text-red-400 border-red-400/40 bg-red-400/10",
-  high: "text-orange-400 border-orange-400/40 bg-orange-400/10",
-  medium: "text-yellow-400 border-yellow-400/40 bg-yellow-400/10",
-  low: "text-sky-400 border-sky-400/40 bg-sky-400/10",
-  nit: "text-muted border-border bg-panel-2",
+  critical: "sev-critical",
+  high: "sev-high",
+  medium: "sev-medium",
+  low: "sev-low",
+  nit: "sev-nit",
 };
 
 export function SeverityTag({ severity }: { severity: string }) {

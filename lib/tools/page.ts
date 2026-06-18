@@ -5,7 +5,7 @@ import type { PageFetch } from "./index";
 // for text grounding; live screenshots come later via Browserless.
 
 // Look like a real browser so alive-but-picky sites don't 403/refuse us.
-const BROWSER_HEADERS = {
+export const BROWSER_HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -58,6 +58,35 @@ function metaDescription(html: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+// Pull head signals from the RAW html (before scripts are stripped) so the URL
+// skills can actually tell whether OG/Twitter cards, analytics, and a favicon
+// exist — instead of falsely reporting them missing.
+function headSignals(html: string): string {
+  const head = (html.match(/<head[\s\S]*?<\/head>/i)?.[0] ?? html.slice(0, 12000));
+  const metas: string[] = [];
+  for (const m of head.matchAll(/<meta[^>]+(?:property|name)=["'](og:[^"']+|twitter:[^"']+)["'][^>]*content=["']([^"']*)["']/gi)) {
+    metas.push(`${m[1]}="${m[2].slice(0, 80)}"`);
+  }
+  const hasJsonLd = /<script[^>]+type=["']application\/ld\+json["']/i.test(head);
+  const hosts = new Set<string>();
+  for (const m of head.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)) {
+    try {
+      const host = new URL(m[1], "https://first-party.local").hostname.replace(/^www\./, "");
+      if (host !== "first-party.local") hosts.add(host); // skip relative/first-party scripts
+    } catch {
+      /* ignore */
+    }
+  }
+  const favicon = /<link[^>]+rel=["'][^"']*icon[^"']*["']/i.test(head);
+  const lines = [
+    metas.length ? `OG/Twitter meta tags present: ${metas.slice(0, 12).join("; ")}` : "OG/Twitter meta tags: none found",
+    `Structured data (JSON-LD): ${hasJsonLd ? "present" : "none found"}`,
+    hosts.size ? `External script hosts (analytics/SDKs detectable here): ${[...hosts].slice(0, 20).join(", ")}` : "External script hosts: none found",
+    `Favicon link: ${favicon ? "present" : "none found"}`,
+  ];
+  return `## Page head signals\n${lines.join("\n")}`;
+}
+
 // Full raw HTML (untruncated) for link extraction — used by intake enrichment to
 // pull the real repo + deployed URL out of an aggregator page (e.g. a Devpost
 // submission). Scripts/styles/comments are stripped so analytics noise (stray
@@ -86,6 +115,8 @@ export async function fetchRealPage(url: string): Promise<PageFetch> {
     const text = [
       title ? `Page title: ${title}` : null,
       desc ? `Meta description: ${desc}` : null,
+      "",
+      headSignals(html),
       "",
       body,
     ]

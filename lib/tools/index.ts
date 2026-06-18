@@ -3,6 +3,7 @@ import { readGithubRepo } from "./github";
 import { fetchRealPage } from "./page";
 import { tavilySearch } from "./search";
 import { browserlessScreenshot, browserlessLoginScreenshot } from "./browserless";
+import { checkLinks as runLinkCheck, type LinkCheck } from "./links";
 
 // Shared tool layer. Skills request actions; this layer performs them.
 // GitHub repo read + page fetch work with no key; web search needs TAVILY_API_KEY;
@@ -32,6 +33,8 @@ export interface Tools {
   search(query: string): Promise<SearchResult[]>;
   /** read a public GitHub repo's structure + README */
   readRepo(repoUrl: string): Promise<RepoRead>;
+  /** fetch the page's internal links and check each one's real status */
+  checkLinks(url: string): Promise<LinkCheck[]>;
 }
 
 const stubTools: Tools = {
@@ -54,6 +57,9 @@ const stubTools: Tools = {
       rawReadme: `# Demo\nA demo product for local testing (${repoUrl}).`,
     };
   },
+  async checkLinks() {
+    return [];
+  },
 };
 
 // Memoize evidence fetches by URL/query for the process lifetime, caching the
@@ -65,11 +71,18 @@ const g = globalThis as unknown as {
     page: Map<string, Promise<PageFetch>>;
     search: Map<string, Promise<SearchResult[]>>;
     shot: Map<string, Promise<{ image?: LLMImage; text?: string }>>;
+    links: Map<string, Promise<LinkCheck[]>>;
   };
 };
 const cache =
   g.__meridianEvidence ??
-  (g.__meridianEvidence = { repo: new Map(), page: new Map(), search: new Map(), shot: new Map() });
+  (g.__meridianEvidence = {
+    repo: new Map(),
+    page: new Map(),
+    search: new Map(),
+    shot: new Map(),
+    links: new Map(),
+  });
 
 function memo<T>(map: Map<string, Promise<T>>, key: string, fn: () => Promise<T>): Promise<T> {
   const hit = map.get(key);
@@ -103,6 +116,9 @@ const realTools: Tools = {
   },
   readRepo(repoUrl) {
     return memo(cache.repo, repoUrl, () => readGithubRepo(repoUrl));
+  },
+  checkLinks(url) {
+    return memo(cache.links, url, () => runLinkCheck(url));
   },
 };
 

@@ -28,9 +28,9 @@ type Run = {
 };
 
 const STANCE: Record<string, string> = {
-  block: "text-red-400 border-red-400/40",
-  "fix-first": "text-yellow-400 border-yellow-400/40",
-  ship: "text-emerald-400 border-emerald-400/40",
+  block: "stance-block",
+  "fix-first": "stance-fix-first",
+  ship: "stance-ship",
 };
 const VERDICT_STYLE: Record<string, string> = {
   ship: "text-emerald-400",
