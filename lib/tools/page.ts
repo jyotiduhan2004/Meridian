@@ -30,6 +30,31 @@ function metaDescription(html: string): string | null {
   return m ? m[1].trim() : null;
 }
 
+// Full raw HTML (untruncated) for link extraction — used by intake enrichment to
+// pull the real repo + deployed URL out of an aggregator page (e.g. a Devpost
+// submission). Scripts/styles/comments are stripped so analytics noise (stray
+// github/CDN links inside <script>) doesn't pollute extraction.
+export async function fetchRawHtml(url: string): Promise<string> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; meridian-review/0.1)", Accept: "text/html" },
+      signal: ctrl.signal,
+      redirect: "follow",
+    });
+    clearTimeout(timer);
+    const html = await res.text();
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ");
+  } catch {
+    return "";
+  }
+}
+
 export async function fetchRealPage(url: string): Promise<PageFetch> {
   try {
     const ctrl = new AbortController();
