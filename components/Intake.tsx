@@ -57,25 +57,28 @@ export default function Intake() {
   }
 
   return (
-    <div className="w-full max-w-xl text-left">
+    <div className="glass glow-cyan w-full rounded-[20px] p-5 text-left">
       {/* mode toggle */}
-      <div className="mb-3 flex gap-1 rounded-lg border border-border bg-panel p-1">
+      <div className="mb-3 flex gap-1 rounded-full border border-border/70 bg-background/40 p-1">
         {(["product", "idea"] as Mode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`mono flex-1 rounded-md px-3 py-1.5 text-sm tracking-wider transition ${
-              mode === m ? "bg-accent/15 text-accent" : "text-muted hover:text-foreground"
+            className={`pill flex-1 px-3 py-1.5 text-sm font-medium transition ${
+              mode === m
+                ? "bg-accent text-background"
+                : "text-muted hover:text-foreground"
             }`}
+            style={mode === m ? { boxShadow: "0 0 18px -6px var(--accent)" } : undefined}
           >
-            [ {m === "product" ? "PRODUCT" : "IDEA"} ]
+            {m === "product" ? "Product" : "Idea"}
           </button>
         ))}
       </div>
-      <p className="mono mb-3 text-center text-xs text-muted">
+      <p className="mb-3 text-center text-xs text-muted">
         {mode === "idea"
-          ? "IDEA = concept → PRODUCT + MARKET only"
-          : "PRODUCT = built → the full team (UX · QA · SEC · OPS · MKT · PM)"}
+          ? "Idea = concept → Product + Market specialists only"
+          : "Product = built → the full team (UX · QA · SEC · OPS · MKT · PM)"}
       </p>
 
       <div className="relative">
@@ -86,9 +89,9 @@ export default function Intake() {
           placeholder={
             mode === "idea"
               ? "describe your idea — the problem, who it's for, how it works…"
-              : "paste a URL, a GitHub repo, a description — anything about your project…"
+              : "paste a URL, a GitHub repo, a Devpost link, or a description…"
           }
-          className="mono h-32 w-full resize-none rounded-lg border border-border bg-panel py-4 pl-8 pr-4 text-sm text-foreground placeholder:text-muted/60 focus:border-accent focus:outline-none"
+          className="mono h-32 w-full resize-none rounded-2xl border border-border bg-background/50 py-4 pl-8 pr-4 text-sm text-foreground placeholder:text-muted/60 focus:border-accent focus:outline-none"
         />
       </div>
 
@@ -96,13 +99,13 @@ export default function Intake() {
         <button
           onClick={analyze}
           disabled={busy || !text.trim()}
-          className="mono mt-3 w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold tracking-wider text-background transition hover:opacity-90 disabled:opacity-40"
-          style={{ boxShadow: busy || !text.trim() ? undefined : "0 0 18px -4px var(--accent)" }}
+          className="pill mt-3 w-full bg-accent px-4 py-3 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
+          style={{ boxShadow: busy || !text.trim() ? undefined : "0 0 22px -6px var(--accent)" }}
         >
-          {busy ? "READING…" : "ANALYZE ▸"}
+          {busy ? "Reading…" : "Analyze →"}
         </button>
       ) : (
-        <div className="mt-4 rounded-lg border border-border bg-panel p-4">
+        <div className="mt-4 rounded-2xl border border-border bg-background/40 p-4">
           <p className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">detected — confirm or edit</p>
           {(["url", "repo", "description"] as const).map((k) => (
             <label key={k} className="mb-2 block">
@@ -114,23 +117,24 @@ export default function Intake() {
                 value={ex[k] ?? ""}
                 onChange={(e) => setEx({ ...ex, [k]: e.target.value })}
                 placeholder={`no ${k} detected`}
-                className="mono w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                className="mono w-full rounded-xl border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none"
               />
             </label>
           ))}
           <div className="mt-3 flex gap-2">
             <button
               onClick={() => setEx(null)}
-              className="mono rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground"
+              className="pill border border-border px-4 py-2 text-sm text-muted transition hover:text-foreground"
             >
-              ← BACK
+              ← Back
             </button>
             <button
               onClick={run}
               disabled={busy}
-              className="mono flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-semibold tracking-wider text-background transition hover:opacity-90 disabled:opacity-40"
+              className="pill flex-1 bg-accent px-4 py-2 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
+              style={{ boxShadow: busy ? undefined : "0 0 22px -6px var(--accent)" }}
             >
-              {busy ? "DEPLOYING TEAM…" : "RUN THE TEAM ▸"}
+              {busy ? "Deploying team…" : "Run the team →"}
             </button>
           </div>
         </div>

@@ -56,18 +56,19 @@ export function CallsignBadge({
 export function Panel({
   children,
   active = false,
+  glass = false,
   className = "",
 }: {
   children: React.ReactNode;
   active?: boolean;
+  glass?: boolean;
   className?: string;
 }) {
+  const base = glass
+    ? "glass glow-cyan rounded-[20px]"
+    : "rounded-xl border border-border bg-panel panel-glow";
   return (
-    <div
-      className={`relative overflow-hidden rounded-lg border border-border bg-panel panel-glow ${
-        active ? "scanline" : ""
-      } ${className}`}
-    >
+    <div className={`relative overflow-hidden ${base} ${active ? "scanline" : ""} ${className}`}>
       {children}
     </div>
   );
@@ -97,8 +98,8 @@ export function ScoreRing({
       <div
         className="absolute inset-0 rounded-full"
         style={{
-          background: `conic-gradient(${color} ${deg}deg, var(--border) 0)`,
-          boxShadow: `0 0 20px -6px ${color}`,
+          background: `conic-gradient(from -90deg, ${color} ${deg}deg, var(--border) 0)`,
+          boxShadow: `0 0 24px -6px ${color}`,
         }}
       />
       <div

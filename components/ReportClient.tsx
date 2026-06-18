@@ -150,7 +150,7 @@ export default function ReportClient({ id }: { id: string }) {
   return (
     <main className="flex-1 w-full">
       {/* sticky HUD header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background/85 backdrop-blur">
+      <header className="glass sticky top-0 z-10 border-x-0 border-t-0">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-5 py-3">
           <Link href="/" className="text-sm text-muted transition hover:text-foreground">
             <Wordmark className="text-sm" />
@@ -271,7 +271,7 @@ function Overview({
   const pm = personaFor("PM");
   if (!verdict) {
     return (
-      <Panel active className="p-6">
+      <Panel glass active className="p-6">
         <p className="mono text-sm text-accent cursor">running specialists…</p>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-background">
           <div className="h-full bg-accent transition-all" style={{ width: `${progress}%`, boxShadow: "0 0 12px var(--accent)" }} />
@@ -299,7 +299,7 @@ function Overview({
 
       {/* PRODUCT synthesis */}
       <motion.div {...reveal(0)}>
-        <Panel className="p-6" >
+        <Panel glass className="p-6">
           <div className="mb-2 flex items-center gap-2">
             <CallsignBadge callsign={pm.callsign} color={pm.color} />
             <span className="mono text-sm tracking-wider" style={{ color: pm.color }}>{pm.label}</span>
@@ -412,7 +412,7 @@ function SpecialistPane({ spec, list }: { spec: string; list: SkillEnvelope[] })
     : null;
   return (
     <div>
-      <Panel className="mb-5 p-5" active={list.some((s) => s.status === "running" || s.status === "pending")}>
+      <Panel glass className="mb-5 p-5" active={list.some((s) => s.status === "running" || s.status === "pending")}>
         <div className="flex items-center gap-3">
           <CallsignBadge callsign={p.callsign} color={p.color} size="md" />
           <div>
@@ -516,7 +516,7 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
   if (!ready) return <p className="mono text-sm text-muted">the investor enters once the verdict is in…</p>;
 
   return (
-    <Panel className="p-6">
+    <Panel glass className="p-6">
       <div className="mb-4 flex items-center gap-2">
         <CallsignBadge callsign="INV" color={p.color} size="md" />
         <span className="mono text-lg font-semibold tracking-wider" style={{ color: p.color }}>THE INVESTOR</span>
@@ -525,8 +525,8 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
         <button
           onClick={() => next()}
           disabled={busy}
-          className="mono rounded-lg px-5 py-2.5 text-sm font-semibold tracking-wider text-background transition hover:opacity-90 disabled:opacity-40"
-          style={{ background: p.color, boxShadow: `0 0 18px -4px ${p.color}` }}
+          className="pill mono px-5 py-2.5 text-sm font-semibold tracking-wider text-background transition hover:brightness-110 disabled:opacity-40"
+          style={{ background: p.color, boxShadow: `0 0 22px -6px ${p.color}` }}
         >
           {busy ? "…" : "FACE THE INVESTOR →"}
         </button>
@@ -551,7 +551,7 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
                 }
               }}
               placeholder="defend your product…"
-              className="mono flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+              className="mono flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
             />
             <button
               onClick={() => {
@@ -561,7 +561,7 @@ function Investor({ runId, ready }: { runId: string; ready: boolean }) {
                 }
               }}
               disabled={busy || !answer.trim()}
-              className="mono rounded-lg px-5 py-2.5 text-sm font-semibold text-background transition hover:opacity-90 disabled:opacity-40"
+              className="pill mono px-5 py-2.5 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
               style={{ background: p.color }}
             >
               SEND

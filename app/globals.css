@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* layered near-blacks */
+  /* layered near-blacks, subtly tinted toward navy for the glass blend */
   --background: #06080c;
   --panel: #0c1016;
   --panel-2: #11161e;
@@ -12,6 +12,13 @@
   --accent: #22d3ee;
   --accent-dim: #0e7490;
   --accent-glow: rgba(34, 211, 238, 0.35);
+  /* glass blend (Orion-inspired) */
+  --glass-bg: rgba(18, 24, 34, 0.55);
+  --glass-border: rgba(160, 210, 255, 0.14);
+  --radius-xl: 24px;
+  /* deep navy gradient stops for hero / section washes */
+  --navy-1: #0a1322;
+  --navy-2: #0b1d38;
 }
 
 @theme inline {
@@ -26,12 +33,14 @@
   /* aliases so existing utility names keep working */
   --color-card: var(--panel);
   --color-card-2: var(--panel-2);
-  --font-sans: var(--font-plex-sans);
+  --font-sans: var(--font-poppins);
   --font-mono: var(--font-plex-mono);
 }
 
 html {
   font-size: 16px;
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px; /* clear the sticky nav when jumping to anchors */
 }
 
 body {
@@ -40,13 +49,19 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  /* faint HUD grid + corner glow */
+  /* deep navy washes (top cyan, bottom navy) over a faint HUD grid */
   background-image:
-    radial-gradient(48rem 28rem at 50% -8%, rgba(34, 211, 238, 0.08), transparent 70%),
-    linear-gradient(rgba(34, 211, 238, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.025) 1px, transparent 1px);
-  background-size: 100% 100%, 44px 44px, 44px 44px;
+    radial-gradient(52rem 30rem at 50% -10%, rgba(34, 211, 238, 0.1), transparent 70%),
+    radial-gradient(46rem 34rem at 12% 8%, rgba(11, 29, 56, 0.55), transparent 60%),
+    radial-gradient(50rem 40rem at 88% 100%, rgba(10, 19, 34, 0.65), transparent 62%),
+    linear-gradient(rgba(34, 211, 238, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.022) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 44px 44px, 44px 44px;
   background-attachment: fixed;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.018em;
 }
 
 /* monospace data utility */
@@ -61,6 +76,52 @@ body {
 }
 .panel-glow {
   box-shadow: 0 0 0 1px var(--border), 0 8px 40px -24px rgba(0, 0, 0, 0.9);
+}
+
+/* ── Glass blend (Orion-inspired) ─────────────────────────────────────────── */
+/* translucent, blurred card with a hairline border + soft inner highlight */
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+/* soft cyan halo for hero/feature cards */
+.glow-cyan {
+  box-shadow:
+    0 0 0 1px rgba(160, 210, 255, 0.16),
+    0 12px 48px -16px var(--accent-glow);
+}
+/* pill radius for buttons / chips / tabs */
+.pill {
+  border-radius: 999px;
+}
+.rounded-xl-2 {
+  border-radius: var(--radius-xl);
+}
+/* cyan → sky → violet clipped gradient text for headlines */
+.text-gradient {
+  background: linear-gradient(100deg, #e8fbff 0%, var(--accent) 42%, #818cf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* glossy 3D orb in a channel color — set --c to colorize */
+.sphere {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at 50% 55%, var(--c, var(--accent)), color-mix(in srgb, var(--c, var(--accent)) 55%, #000) 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 30px -8px var(--c, var(--accent)),
+    inset 0 -6px 14px -6px rgba(0, 0, 0, 0.5);
+}
+/* a section divider hairline that fades at the edges */
+.rule-fade {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
 
 /* a moving scanline sweep used on active panels */
@@ -94,6 +155,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .scanline::after,
   .cursor::after {
     animation: none;

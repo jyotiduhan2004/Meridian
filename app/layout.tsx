@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Poppins, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import PendoInitializer from "./PendoInitializer";
 
-const plexSans = IBM_Plex_Sans({
-  variable: "--font-plex-sans",
+// Poppins carries the friendly, rounded headings/body; IBM Plex Mono stays for
+// data, callsigns, and HUD readouts so the technical signal survives the polish.
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const plexMono = IBM_Plex_Mono({
@@ -29,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${poppins.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
         <script
