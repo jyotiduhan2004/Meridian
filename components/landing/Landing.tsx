@@ -134,7 +134,7 @@ function Hero() {
           ))}
         </div>
 
-        <div id="intake" className="mt-11 w-full max-w-xl scroll-mt-24">
+        <div id="intake" className="mt-11 w-full max-w-3xl scroll-mt-24">
           <Intake />
         </div>
       </motion.div>
