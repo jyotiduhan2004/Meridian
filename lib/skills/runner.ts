@@ -164,7 +164,9 @@ function buildPrompt(body: string, inputs: RunInputs, evidence: string): string 
     .filter(Boolean)
     .join("\n");
 
+  const today = new Date().toISOString().slice(0, 10);
   return [
+    `Today's date is ${today} — treat its year as the CURRENT year (never flag a current-year date, e.g. a copyright year, as "in the future").`,
     "Run the skill below on the project and return ONLY a JSON object with keys:",
     "score (0-10 number), stance (EXACTLY one of: block | fix-first | ship | n/a),",
     "rubricBreakdown ([{dimension, max, earned}]),",
@@ -172,6 +174,7 @@ function buildPrompt(body: string, inputs: RunInputs, evidence: string): string 
     "note (optional string).",
     "Base every finding on the EVIDENCE below — cite file paths / specifics. Do not invent facts.",
     "NEVER claim an HTTP status, a broken/404 link, or a click-through/navigation result unless the EVIDENCE explicitly shows it (e.g. the internal link check). A route that requires login or redirects to a sign-in page is REACHABLE, not broken. Do not assert measured metrics you weren't given. If it's not in the evidence, don't state it.",
+    'If you cannot verify something from the evidence, OMIT it or explicitly say you could not verify it (e.g. "could not confirm from the available evidence") — never present a guess as fact. Prefer fewer, well-grounded findings over speculation.',
     "",
     "=== SKILL ===",
     body.slice(0, 6000),

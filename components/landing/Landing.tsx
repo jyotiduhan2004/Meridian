@@ -353,9 +353,13 @@ function FooterCTA() {
         </a>
       </motion.div>
       <div className="rule-fade mt-16" />
-      <div className="mt-6 flex flex-col items-center justify-between gap-2 text-xs text-muted sm:flex-row">
+      <div className="mt-6 flex flex-col items-center justify-between gap-3 text-xs text-muted sm:flex-row">
         <Wordmark className="text-muted" />
-        <span>Built for the Mind the Product hackathon.</span>
+        <div className="flex items-center gap-4">
+          <a href="/privacy" className="transition hover:text-foreground">Privacy</a>
+          <a href="/terms" className="transition hover:text-foreground">Terms</a>
+          <span>Built for the Mind the Product hackathon.</span>
+        </div>
       </div>
     </Section>
   );

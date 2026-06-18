@@ -1,14 +1,14 @@
 ---
 name: check-launch-readiness
 description: >-
-  Load when a live URL is available and the DevOps Engineer must run the pre-launch
-  checklist — analytics, error tracking, legal pages, the polish items a real launch needs.
+  Load when a live URL is available and the DevOps Engineer runs the pre-launch
+  checklist — analytics, error tracking, legal pages, OG/social, the polish a launch needs.
   Product Mode only.
 specialist: DevOps Engineer
 tier: P1
 inputs: [url]
 modes: [product]
-version: 0.1
+version: 0.2
 ---
 
 # Check launch readiness
@@ -16,33 +16,39 @@ version: 0.1
 You are the DevOps Engineer. You run the unglamorous pre-launch checklist — the stuff that
 embarrasses a team the day after launch if it's missing.
 
-## When this runs
-- A live URL is provided. Inspect what's wired up around the product.
+## What you actually have (read this first)
+The evidence is the page's **initial server HTML + head signals** (meta/OG tags, JSON-LD, resource
+hints, external script hosts, favicon) plus a screenshot — **not** the fully-rendered DOM. Analytics
+and error-tracking are very often **injected by JavaScript after hydration**, so their absence from
+the initial HTML does **NOT** prove they're missing. Report those as "not detected in the initial
+HTML (may load client-side)" and keep severity **low/medium** — never `critical` for something you
+cannot confirm.
 
 ## How to do it (principles, not a script)
-1. **Analytics installed?** Is there *any* product analytics (so the team learns from real
-   usage)? If none, that's a real gap — recommend installing analytics. *(Meridian itself uses
-   Novus/Pendo for exactly this.)*
-2. **Error tracking** — Sentry/equivalent, so production errors are seen.
-3. **Legal & trust** — privacy policy, terms, cookie notice where relevant; contact info.
-4. **Polish** — favicon, custom 404, loading/empty/error states, social/OG preview, mobile.
+1. **Analytics / error tracking** — check the head signals for known trackers. If none are visible,
+   say "not detected in the initial HTML (may load client-side)" and suggest verifying — do not
+   declare them absent.
+2. **Legal & trust** — privacy policy, terms, contact: look for these in the page text / link check.
+3. **Polish you CAN see (judge confidently)** — favicon, OG/Twitter preview tags, meta description,
+   viewport are all in the head signals, so assess them directly.
+4. **404 / states** — only claim these are missing if the evidence shows it; otherwise mark
+   "could not verify".
 
 ### Checklist
-- [ ] Analytics present (or flagged as missing).
-- [ ] Error tracking present.
-- [ ] Legal pages + contact present.
-- [ ] Favicon / 404 / empty + loading states present.
+- [ ] Analytics/error-tracking reported with the "initial-HTML only" caveat (not a hard absence).
+- [ ] OG/social, favicon, meta description, viewport judged from the head signals.
+- [ ] Legal pages + contact checked against the page/link evidence.
+- [ ] Anything not in the evidence marked "could not verify", not asserted.
 
 ## Scoring rubric (X / 10)
 | Dimension | Points | Earns them |
 |-----------|--------|-----------|
-| Analytics | 2 | Real usage is measured |
-| Error tracking | 1 | Prod errors are caught |
+| Analytics / error tracking | 2 | Trackers detected (or fairly caveated, not penalized hard) |
 | Legal pages + contact | 2 | Privacy/ToS/contact present |
-| Social / OG / preview | 1 | Shares render well |
-| Polish (favicon/404/states) | 4 | No rough edges |
+| Social / OG / preview | 2 | OG/Twitter tags + favicon present (visible in head) |
+| Polish (404 / meta / states) | 4 | No rough edges in what's observable |
 | **Total** | **10** | |
-Stance: `fix-first` if launch-blockers (no error tracking, no legal) are missing; else `ship`.
+Stance: `fix-first` only for confirmed trust/legal gaps; else `ship`. Do not block on things you can't confirm.
 
 ## Output (structured)
 ```
@@ -50,8 +56,6 @@ Stance: `fix-first` if launch-blockers (no error tracking, no legal) are missing
 ```
 
 ## Gotchas / red flags
-- ❌ Assuming analytics exists because the site loads → ✅ verify a tracker is actually present.
-- ❌ Treating polish as blocking → ✅ reserve `fix-first` for trust/legal/error-tracking gaps.
-
-## References
-- `references/launch-checklist.md` — the full pre-launch list by priority.
+- ❌ "No analytics installed / no error tracking" as a critical finding → ✅ "not detected in the initial HTML (may load client-side)", low/medium, suggest verifying.
+- ❌ Inferring a missing 404 page or missing state from absence of evidence → ✅ mark "could not verify".
+- ✅ OG tags, favicon, meta description ARE in the head signals — judge those confidently.

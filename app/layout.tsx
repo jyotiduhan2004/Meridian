@@ -18,10 +18,44 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const NOVUS_KEY = process.env.NEXT_PUBLIC_NOVUS_KEY; // client analytics id, set in env (not hardcoded)
+
+const TITLE = "Meridian — your product team, on demand";
+const DESCRIPTION =
+  "Paste your product and a team of specialist agents analyzes it across UX, code, security, market, and operations — then an investor makes you defend it.";
+
 export const metadata: Metadata = {
-  title: "Meridian — your product team, on demand",
-  description:
-    "Paste your product and a team of specialist agents analyzes it across UX, code, security, market, and operations — then an investor makes you defend it.",
+  metadataBase: new URL(siteUrl),
+  applicationName: "Meridian",
+  title: TITLE,
+  description: DESCRIPTION,
+  keywords: ["product review", "AI agents", "code review", "security audit", "UX audit", "launch readiness", "market research"],
+  authors: [{ name: "Meridian" }],
+  openGraph: {
+    type: "website",
+    siteName: "Meridian",
+    url: siteUrl,
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+};
+
+// SoftwareApplication structured data so search/discoverability tools see rich info.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Meridian",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Web",
+  description: DESCRIPTION,
+  url: siteUrl,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
 export default function RootLayout({
@@ -40,16 +74,22 @@ export default function RootLayout({
         <Script id="theme-init" strategy="beforeInteractive">
           {`(function(){try{if(localStorage.getItem('meridian-theme')==='light'){document.documentElement.setAttribute('data-theme','light');}}catch(e){}})();`}
         </Script>
-        <Script id="pendo-agent" strategy="afterInteractive">
-          {`(function(apiKey){
+        {NOVUS_KEY && (
+          <Script id="pendo-agent" strategy="afterInteractive">
+            {`(function(apiKey){
     (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
     v=['initialize','identify','updateOptions','pageLoad','track','trackAgent'];for(w=0,x=v.length;w<x;++w)(function(m){
     o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
     y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo.io/agent/static/'+apiKey+'/pendo.js';
     z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
-})('e3dd0a28-5627-4665-b27c-325fa506754d');`}
-        </Script>
-        <PendoInitializer />
+})('${NOVUS_KEY}');`}
+          </Script>
+        )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+        />
+        {NOVUS_KEY && <PendoInitializer />}
         {children}
       </body>
     </html>

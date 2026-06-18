@@ -68,6 +68,11 @@ function headSignals(html: string): string {
     metas.push(`${m[1]}="${m[2].slice(0, 80)}"`);
   }
   const hasJsonLd = /<script[^>]+type=["']application\/ld\+json["']/i.test(head);
+  const hasDescription = /<meta[^>]+name=["']description["']/i.test(head);
+  const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(head);
+  const hints = ["preconnect", "preload", "dns-prefetch", "prefetch"].filter((rel) =>
+    new RegExp(`<link[^>]+rel=["'][^"']*${rel}[^"']*["']`, "i").test(head),
+  );
   const hosts = new Set<string>();
   for (const m of head.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)) {
     try {
@@ -79,10 +84,13 @@ function headSignals(html: string): string {
   }
   const favicon = /<link[^>]+rel=["'][^"']*icon[^"']*["']/i.test(head);
   const lines = [
-    metas.length ? `OG/Twitter meta tags present: ${metas.slice(0, 12).join("; ")}` : "OG/Twitter meta tags: none found",
+    metas.length ? `OG/Twitter meta tags present: ${metas.slice(0, 12).join("; ")}` : "OG/Twitter meta tags: none found in initial HTML",
+    `Meta description: ${hasDescription ? "present" : "none found"} · viewport: ${hasViewport ? "present" : "none found"}`,
     `Structured data (JSON-LD): ${hasJsonLd ? "present" : "none found"}`,
-    hosts.size ? `External script hosts (analytics/SDKs detectable here): ${[...hosts].slice(0, 20).join(", ")}` : "External script hosts: none found",
+    `Resource hints (preconnect/preload/dns-prefetch): ${hints.length ? hints.join(", ") : "none found"}`,
+    hosts.size ? `External script hosts in <head>: ${[...hosts].slice(0, 20).join(", ")}` : "External script hosts in <head>: none found",
     `Favicon link: ${favicon ? "present" : "none found"}`,
+    "NOTE: this reflects the INITIAL server HTML only — anything injected client-side after hydration (e.g. analytics or error-tracking loaded by JS) will NOT appear here, so absence here does NOT prove it is missing.",
   ];
   return `## Page head signals\n${lines.join("\n")}`;
 }

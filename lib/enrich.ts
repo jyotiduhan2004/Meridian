@@ -48,7 +48,7 @@ const REPO_SUBPATH = /^(blob|tree|raw|releases|wiki|issues|pull|pulls|actions|co
 // repo/page-derived description can take over.
 const INSTRUCTIONY =
   /\b(analy[sz]e|review|check (this|it)|here'?s|this is (my|the)|please|can you|take a look|rate|evaluate|tell me)\b/i;
-function weakDescription(d?: string): boolean {
+export function weakDescription(d?: string): boolean {
   if (!d) return true;
   const t = d.trim();
   if (t.length < 40) return true;
@@ -123,7 +123,7 @@ const BARE_DOMAIN =
  * a bare domain (so "the deployed url is myapp.io" is honored even without the
  * scheme). GitHub/badge/asset links are skipped.
  */
-function urlFromText(text: string): string | undefined {
+export function urlFromText(text: string): string | undefined {
   for (const m of text.matchAll(/https?:\/\/[^\s)\]"'<>]+/gi)) {
     const u = m[0].replace(/[).,;]+$/, "");
     if (!NON_APP_HOST.test(u) && !BADGE.test(u)) return u;
