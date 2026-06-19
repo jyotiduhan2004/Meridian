@@ -12,10 +12,16 @@ import { RunInputs } from "@/lib/schema";
 function stripMarkdown(md: string): string {
   return md
     .replace(/```[\s\S]*?```/g, " ") // code fences
+    .replace(/<!--[\s\S]*?-->/g, " ") // HTML comments
+    .replace(/<[^>]+>/g, " ") // HTML tags (READMEs embed <div>/<img>/<a>/<p>…)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ") // images
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links → text
     .replace(/^#{1,6}\s+/gm, "") // headings
-    .replace(/[*_`>#-]/g, " ")
+    .replace(/&(?:lt|gt|nbsp);/gi, " ") // escaped tags / nbsp → space
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[*_`>#|-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

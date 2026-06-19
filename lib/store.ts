@@ -139,11 +139,14 @@ class SupabaseRunStore implements RunStore {
   }
 
   async get(id: string): Promise<Run | undefined> {
-    const local = await this.mem.get(id);
-    if (local) return local;
+    // Supabase is the source of truth. The per-instance in-memory cache goes STALE
+    // because per-skill writes land on *other* serverless instances — so the creating
+    // instance keeps seeing skills as "pending" and synthesis 202s forever. Reconstruct
+    // from Supabase on every read; fall back to the cache only when the remote read is
+    // unavailable (run not yet persisted, or a transient remote error).
     try {
       const rows = await sbSelect<RunRow>("runs", `id=eq.${id}&select=*`);
-      if (!rows.length) return undefined;
+      if (!rows.length) return this.mem.get(id);
       const r = rows[0];
       const skillRows = await sbSelect<{ skill_id: string; envelope: SkillEnvelope }>(
         "run_skills",
@@ -170,11 +173,11 @@ class SupabaseRunStore implements RunStore {
         verdict: r.verdict ?? null,
         createdAt: Number(r.created_at),
       };
-      this.mem.seed(run); // hot-cache the reconstructed run for this process
+      this.mem.seed(run); // refresh the hot cache with the authoritative state
       return run;
     } catch (e) {
       console.warn(`[store] get(${id}) remote failed:`, String(e).slice(0, 160));
-      return undefined;
+      return this.mem.get(id);
     }
   }
 
