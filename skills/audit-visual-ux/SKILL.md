@@ -24,8 +24,11 @@ single static frame.
 - focus / hover / active / disabled states, or keyboard navigation;
 - exact contrast ratios or exact line-height/font-size numbers (you can't measure pixels);
 - responsiveness / mobile behavior / horizontal scroll (there is no mobile screenshot);
-- load-time or animation behavior.
+- load-time or animation behavior;
+- that a blank, grey, or empty region is a "placeholder", "broken image", "missing content", or "unfinished" — the screenshot is a single best-effort capture and images/sections frequently haven't finished loading. A blank area is almost always an asset still loading, NOT a defect. Do not raise it.
 If you can't see it, mark it "could not verify" or omit it — never assert it.
+
+Also: do NOT quote headline/body copy as if authoritative — a single render can be stale, so hedge any wording you reference. CTA / hierarchy / spacing / contrast observations are subjective suggestions at `low` or `nit` severity — NEVER critical or high.
 
 ## How to do it (observable in one frame)
 1. **First impression.** Is it obvious what this is and what to do? Is the primary CTA visually
@@ -36,7 +39,7 @@ If you can't see it, mark it "could not verify" or omit it — never assert it.
    clearly cramped — describe what you see ("the grey sub-text on white is hard to read") without
    inventing a precise ratio.
 4. **Visual consistency.** Do buttons/headings/colors look like one coherent system, or mismatched?
-5. **Visible polish.** Cut-off text, misaligned elements, placeholder content, broken images.
+5. **Visible polish.** Clearly misaligned elements or obviously rough edges. (A blank/grey region is a still-loading asset, not a placeholder or broken image — do not flag it.)
 
 ### Checklist
 - [ ] CTA prominence judged from the frame.
@@ -64,3 +67,4 @@ Evidence = what you can point to in the screenshot. Always propose the concrete 
 - ❌ "Missing focus/hover states", "fails at 375px", "contrast is 3.1:1", "line-height too tight" — you can't see or measure any of these from one static desktop shot → ✅ judge only the visible frame; mark the rest "could not verify".
 - ❌ "The design feels off" → ✅ name the element and the visible problem.
 - ❌ Inventing precise numbers (ratios, px, breakpoints) → ✅ describe qualitatively.
+- ❌ Calling a blank/grey area a "placeholder", "empty", or "broken image", or quoting copy from one render as fact → ✅ assume blank regions are still-loading assets; never raise them, and never label UX issues critical/high.

@@ -19,6 +19,13 @@ whether search engines and social shares can surface it.
 ## When this runs
 - A live URL is provided. Inspect the page's head, structure, and crawl signals.
 
+## What you actually have (read this first)
+The homepage's HTML + head signals (title, meta description, OG/Twitter, canonical, JSON-LD, H1). You do
+**NOT** have the separate `/robots.txt` or `/sitemap.xml` files — they are not in your evidence.
+Therefore **NEVER claim `robots.txt` or `sitemap.xml` is "missing"** (you cannot see them): say "could not
+verify sitemap/robots from the homepage" instead. Only assert presence/absence of things VISIBLE in the
+provided HTML head.
+
 ## How to do it (principles, not a script)
 1. **On-page basics** — a real `<title>`, meta description, a single clear `<h1>`, sane heading
    hierarchy, descriptive link text.
@@ -51,6 +58,7 @@ Stance: `fix-first` if core SEO (title/meta/indexability) is broken; else `ship`
 ## Gotchas / red flags
 - ❌ Listing every micro-optimization → ✅ lead with the few that move rankings.
 - ❌ Missing an accidental `noindex` → ✅ always check indexability first.
+- ❌ Claiming `sitemap.xml` / `robots.txt` is missing because it isn't in the homepage HTML → ✅ those are separate files you weren't given; say "could not verify" — only judge what's in the provided HTML head (title, meta, OG/Twitter, canonical, JSON-LD, H1).
 
 ## References
 - `references/seo.md` — audit categories + weights.

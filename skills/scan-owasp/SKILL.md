@@ -53,6 +53,8 @@ Stance: `block` on any critical (injection / authz bypass), else `fix-first` or 
 - ❌ Treating authN as authZ → ✅ check that *authorization* is enforced per object.
 - ❌ Style nits as "critical" → ✅ reserve `critical` for exploitable holes.
 - ❌ Raising a high/critical finding on a pattern you can't actually see ("based on general structure", "specific checks not visible in the snippets") → ✅ if it isn't confirmed in the provided code, downgrade to a low "worth verifying" or omit it — don't assert unconfirmed risk.
+- ❌ Reporting SQL / command / template injection on a query with no untrusted input → ✅ injection REQUIRES untrusted input reaching a sink. A static or parameterized query with no string interpolation of request data is NOT injectable — do not raise it (and never as critical). Reflected XSS requires request-derived data echoed to the page; author-controlled content is not reflected XSS.
+- ❌ Claiming "missing security headers", "no helmet", "no CSP", "permissive/wildcard CORS", "debug on in prod", or "default credentials" because you didn't see the config → ✅ that setup lives in a server entry / middleware / deploy config that is usually NOT in your file sample. If you can't directly SEE it misconfigured, say "could not verify the security-header / CORS setup" — never assert it's missing or wrong. Judge response headers only from actual response-header evidence, not from repo-file absence.
 
 ## References
 - `references/owasp-top10.md` — the checklist per category with examples.

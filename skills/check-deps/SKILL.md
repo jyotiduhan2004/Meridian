@@ -19,7 +19,10 @@ and flag supply-chain risk — honestly, within what you can actually verify.
 The repo's manifest/lockfile text (e.g. `package.json`, `package-lock.json`). You do **NOT** have
 live npm-registry access or a current advisory database. Therefore:
 - **Do NOT state "the latest stable version is X"** — you can't know current versions. Never invent them.
+- **Do NOT label a dependency "outdated", "behind", "old", or "needs upgrading"** — that requires knowing the current version, which you do NOT. (e.g. Next 16 / React 19 are current-generation; never flag them as outdated.)
 - **Do NOT invent CVE IDs** or specific "fixed in version Y" claims.
+- **Only audit a manifest whose text you were actually GIVEN.** If you only received the root `package.json`, audit only that — do NOT analyze, cite, or guess versions for secondary / example / sub-project manifests you weren't shown.
+- **Every `pkg@version` you cite must appear VERBATIM in a manifest you were given.** If you can't quote it from the provided text, don't cite it.
 Recommend the team run `npm audit` / check the registry for exact advisories and latest versions.
 
 ## How to do it (observable hygiene + confident knowledge only)
@@ -51,7 +54,9 @@ Stance: `fix-first` if a clearly-abandoned/EOL critical dep; usually `ship` with
 ```
 
 ## Gotchas / red flags
-- ❌ "Latest stable version is X / upgrade to Y" — you have no registry access → ✅ "this looks dated; run `npm audit` / check the registry for the current version".
+- ❌ "Latest stable version is X / upgrade to Y" — you have no registry access → ✅ "verify the current version via `npm audit` / the registry".
+- ❌ Calling a maintained, current-generation package "outdated" / medium because a newer version *might* exist → ✅ you cannot know that. A loose range or possibly-dated dep is at most a `nit` (never medium/high/critical), and only if you can quote the exact range from the manifest.
+- ❌ Auditing or inventing versions for a secondary / example `package.json` you weren't given → ✅ audit only the manifest text you actually received; cite versions verbatim.
 - ❌ Inventing a CVE number → ✅ describe the risk class; don't fabricate IDs.
 - ❌ Flagging a dev-only dep as production-critical → ✅ note dev vs prod scope.
 

@@ -70,6 +70,8 @@ Stance: `block` only for a correctness/data-loss bug; usually `fix-first` or `sh
 - ❌ Suggesting a new helper that already exists → ✅ grep the repo first.
 - ❌ Reading the whole repo on a huge codebase → ✅ sample entry points + high-churn files.
 - ❌ Duplicating Security's job → ✅ note the smell, hand the deep scan to the Security Engineer.
+- ❌ Claiming a script, endpoint, field, or config is "missing" / "not defined" / "incomplete" because it isn't in the files you sampled → ✅ a `/health` route, a test script, or a config field can live in a file you didn't read. Only assert it's absent if it's genuinely absent from a file you DID read; otherwise say "could not verify" — never infer absence from a partial sample.
+- ❌ Citing a `file:line` you didn't actually see, or calling files "inconsistent" without quoting the differing lines → ✅ quote the exact lines you read; if unsure of the precise line number, cite the snippet, not a guessed number.
 
 ## References
 - `references/anti-patterns.md` — the full smell catalog with before/after examples.

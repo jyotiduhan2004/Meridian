@@ -51,6 +51,7 @@ Stance: `block` if an unauthenticated sensitive endpoint or data leak is found.
 - ❌ Assuming a public endpoint is a leak → ✅ judge by whether the data is sensitive.
 - ❌ Reporting without the endpoint → ✅ name the route + what it exposed.
 - ❌ Raising a high finding on something "not provided in the evidence" / "not possible to verify" → ✅ omit it or mark it a low "worth checking" — don't assert unconfirmed risk as high.
+- ❌ Reporting missing authZ, data over-exposure, mass-assignment, or an exposed endpoint when you have NO actual API response showing it → ✅ you typically receive only the rendered homepage HTML, not live API responses. Without a concrete response that demonstrates the leak or missing auth, do NOT raise it — say "could not probe the API surface from the available evidence." Never word "potential" / "possible" over-exposure as a high (or critical) finding.
 
 ## References
 - `references/api-authz.md` — BOLA/BOPLA/mass-assignment patterns and safe inference.
