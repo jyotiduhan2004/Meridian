@@ -13,6 +13,14 @@ const SPECIALISTS = Object.entries(PERSONAS)
   .filter(([, p]) => p.callsign !== "INV")
   .sort((a, b) => a[1].order - b[1].order);
 
+// One-click demo inputs — public, no-login projects judges can try instantly.
+// (Smart Intake extracts the repo + URL from the text.)
+const EXAMPLES: { label: string; text: string }[] = [
+  { label: "Excalidraw", text: "https://github.com/excalidraw/excalidraw https://excalidraw.com" },
+  { label: "Dub", text: "https://github.com/dubinc/dub https://dub.co" },
+  { label: "Plausible", text: "https://github.com/plausible/analytics https://plausible.io" },
+];
+
 function Spinner() {
   return (
     <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -124,18 +132,42 @@ export default function Intake() {
       </div>
 
       {!ex ? (
-        <button
-          onClick={analyze}
-          disabled={busy || !text.trim()}
-          className="pill mt-3 w-full bg-accent px-4 py-3 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
-          style={{ boxShadow: busy || !text.trim() ? undefined : "0 0 22px -6px var(--accent)" }}
-        >
-          {busy ? (
-            <span className="inline-flex items-center justify-center gap-2"><Spinner /> Reading…</span>
-          ) : (
-            "Analyze →"
+        <>
+          {mode === "product" && (
+            <div className="mt-3">
+              <p className="mono mb-1.5 text-[11px] uppercase tracking-wider text-muted">or try a demo</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXAMPLES.map((d) => (
+                  <button
+                    key={d.label}
+                    type="button"
+                    onClick={() => setText(d.text)}
+                    className="pill flex cursor-pointer items-center gap-1.5 border border-border px-2.5 py-1 text-xs text-muted transition hover:scale-105 hover:border-accent hover:text-foreground"
+                  >
+                    <span aria-hidden className="text-accent">↳</span>
+                    <span className="mono">{d.label}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2.5 text-[11px] leading-relaxed text-muted">
+                <span className="text-accent">Judging this hackathon?</span> Paste any other submission — a
+                Devpost link, repo, or live URL — and Meridian reviews it in seconds.
+              </p>
+            </div>
           )}
-        </button>
+          <button
+            onClick={analyze}
+            disabled={busy || !text.trim()}
+            className="pill mt-3 w-full bg-accent px-4 py-3 text-sm font-semibold text-background transition hover:brightness-110 disabled:opacity-40"
+            style={{ boxShadow: busy || !text.trim() ? undefined : "0 0 22px -6px var(--accent)" }}
+          >
+            {busy ? (
+              <span className="inline-flex items-center justify-center gap-2"><Spinner /> Reading…</span>
+            ) : (
+              "Analyze →"
+            )}
+          </button>
+        </>
       ) : (
         <div className="mt-4 rounded-2xl border border-border bg-background/40 p-4">
           <p className="mono mb-3 text-xs uppercase tracking-[0.2em] text-muted">detected — confirm or edit</p>
