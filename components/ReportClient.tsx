@@ -97,32 +97,51 @@ export default function ReportClient({ id }: { id: string }) {
       }
       const data: Run = await r.json();
       setRun(data);
-      if (data.verdict) setVerdict(data.verdict);
+      // Trust a persisted verdict only if it actually scored; a stale empty/0
+      // verdict (synthesis that raced an unfinished run) is recomputed below.
+      if (data.verdict && data.verdict.scoreBreakdown.length > 0) setVerdict(data.verdict);
       if (started.current) return;
       started.current = true;
 
-      const pending = Object.values(data.skills)
-        .filter((s) => s.status === "pending")
-        .map((s) => s.skillId);
-
-      await pool(pending, 2, async (sid) => {
-        try {
-          const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
-          if (res.ok) {
-            const env: SkillEnvelope = await res.json();
-            setSkill(env);
-            trackEvent("skill_completed", { skill: env.skillId, status: env.status, score: env.score ?? -1 });
+      // Drive skills in up to 3 rounds, re-running any still pending/running so a
+      // transient skill hiccup can't strand the run without a score.
+      let current = data;
+      for (let round = 0; round < 3; round++) {
+        const pending = Object.values(current.skills)
+          .filter((s) => s.status === "pending" || s.status === "running")
+          .map((s) => s.skillId);
+        if (pending.length === 0) break;
+        await pool(pending, 2, async (sid) => {
+          try {
+            const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
+            if (res.ok) {
+              const env: SkillEnvelope = await res.json();
+              setSkill(env);
+              trackEvent("skill_completed", { skill: env.skillId, status: env.status, score: env.score ?? -1 });
+            }
+          } catch {
+            /* retried next round */
           }
-        } catch {
-          /* leave as pending; the dashboard tolerates it */
-        }
-      });
+        });
+        const rr = await fetch(`/api/run/${id}`, { cache: "no-store" });
+        if (rr.ok) current = await rr.json();
+      }
 
-      const sv = await fetch(`/api/run/${id}/synthesize`, { method: "POST" });
-      if (sv.ok) {
-        const v: Verdict = await sv.json();
-        setVerdict(v);
-        trackEvent("verdict_synthesized", { score: v.meridianScore, verdict: v.verdict });
+      // Synthesize once skills are settled. The route returns 202 while it's
+      // premature; retry so we never persist or show a stale 0.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const sv = await fetch(`/api/run/${id}/synthesize`, { method: "POST" });
+        if (sv.ok) {
+          const v: Verdict = await sv.json();
+          setVerdict(v);
+          trackEvent("verdict_synthesized", { score: v.meridianScore, verdict: v.verdict });
+          break;
+        }
+        if (sv.status === 202) {
+          await new Promise((res) => setTimeout(res, 1500));
+          continue;
+        }
+        break;
       }
     })();
   }, [id, setSkill]);

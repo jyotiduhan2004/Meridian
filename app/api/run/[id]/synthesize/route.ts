@@ -10,6 +10,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const run = await store.get(id);
   if (!run) return NextResponse.json({ error: "run not found" }, { status: 404 });
 
+  // Don't synthesize while skills are still in flight — that would persist a
+  // premature (often empty, score-0) verdict that sticks. The client retries on 202.
+  const inFlight = Object.values(run.skills).filter(
+    (s) => s.status === "pending" || s.status === "running",
+  ).length;
+  if (inFlight > 0) {
+    return NextResponse.json({ notReady: true, inFlight }, { status: 202 });
+  }
+
   const base = computeVerdict(run);
   const analyzed = base.scoreBreakdown.length > 0;
   const note = !analyzed

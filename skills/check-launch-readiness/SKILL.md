@@ -58,4 +58,5 @@ Stance: `fix-first` only for confirmed trust/legal gaps; else `ship`. Do not blo
 ## Gotchas / red flags
 - ❌ "No analytics installed / no error tracking" as a critical finding → ✅ "not detected in the initial HTML (may load client-side)", low/medium, suggest verifying.
 - ❌ Inferring a missing 404 page or missing state from absence of evidence → ✅ mark "could not verify".
+- ❌ Claiming legal / contact / footer links (privacy, terms, contact) are "missing" when your evidence is head signals → ✅ those links live in the page FOOTER/body, which is usually NOT in the head-signal evidence. Don't assert them missing — mark "not detected in the provided evidence (verify in the footer)" and keep low, unless a link check confirms their absence.
 - ✅ OG tags, favicon, meta description ARE in the head signals — judge those confidently.

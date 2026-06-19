@@ -23,8 +23,10 @@ whether search engines and social shares can surface it.
 The homepage's HTML + head signals (title, meta description, OG/Twitter, canonical, JSON-LD, H1). You do
 **NOT** have the separate `/robots.txt` or `/sitemap.xml` files — they are not in your evidence.
 Therefore **NEVER claim `robots.txt` or `sitemap.xml` is "missing"** (you cannot see them): say "could not
-verify sitemap/robots from the homepage" instead. Only assert presence/absence of things VISIBLE in the
-provided HTML head.
+verify sitemap/robots from the homepage" instead. And the head data is a **SUMMARY of the INITIAL server
+HTML**, not the full page — a tag (JSON-LD, OG/Twitter, canonical, meta description) may be present on the
+live/hydrated page but absent from this summary. So do **NOT** assert ANY tag is "missing"; say "not detected
+in the provided head signals — verify on the live page" and keep such findings `low`.
 
 ## How to do it (principles, not a script)
 1. **On-page basics** — a real `<title>`, meta description, a single clear `<h1>`, sane heading

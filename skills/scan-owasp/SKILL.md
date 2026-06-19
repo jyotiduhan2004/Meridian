@@ -32,6 +32,9 @@ Canonical FALSE POSITIVES — you will see these often; NEVER flag them:
 - a parameterized query using `$1` / `?` placeholders → NOT injectable.
 - `fs.readdir` / `readFile` / `glob` on a FIXED, hardcoded directory or path (e.g. reading your
   `content/` or `notes/` folder to build a sitemap) — the path is not request-controlled → NOT path traversal.
+- parsing or LOGGING a request URL (e.g. `getSearchParams(req.url)`, sending `req.url` to Axiom / Sentry /
+  console) — there is no outbound fetch to a request-controlled host → NOT SSRF. SSRF requires the SERVER
+  to FETCH a URL taken from the request (e.g. `fetch(req.query.url)`); a parser or logger never makes that request.
 
 Do NOT invent a hypothetical ("if an attacker could write to the DB", "if the table held malicious data")
 to justify a finding — that is not evidence.

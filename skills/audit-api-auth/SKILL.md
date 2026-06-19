@@ -52,6 +52,7 @@ Stance: `block` if an unauthenticated sensitive endpoint or data leak is found.
 - ❌ Reporting without the endpoint → ✅ name the route + what it exposed.
 - ❌ Raising a high finding on something "not provided in the evidence" / "not possible to verify" → ✅ omit it or mark it a low "worth checking" — don't assert unconfirmed risk as high.
 - ❌ Reporting missing authZ, data over-exposure, mass-assignment, or an exposed endpoint when you have NO actual API response showing it → ✅ you typically receive only the rendered homepage HTML, not live API responses. Without a concrete response that demonstrates the leak or missing auth, do NOT raise it — say "could not probe the API surface from the available evidence." Never word "potential" / "possible" over-exposure as a high (or critical) finding.
+- ❌ Calling names / emails / figures in the homepage HTML a "PII leak" or "exposed customer data" → ✅ marketing pages embed demo/mockup content: placeholder emails (`name@acme.com`, `you@example.com`, `support@<theirdomain>`), illustrative invoice / dashboard cards, and "customer" avatars. That is intentional marketing copy, NOT exposed user data. A real leak requires ACTUAL user data returned by an endpoint without authorization — not example content rendered in a landing page. Do not raise it.
 
 ## References
 - `references/api-authz.md` — BOLA/BOPLA/mass-assignment patterns and safe inference.
