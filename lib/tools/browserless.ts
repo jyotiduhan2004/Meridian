@@ -66,7 +66,8 @@ export async function browserlessLoginScreenshot(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: LOGIN_FN, context: { url, email: creds.email, password: creds.password } }),
-      signal: AbortSignal.timeout(70000),
+      // kept under the per-skill route's 60s maxDuration; on timeout we fall back to the plain screenshot
+      signal: AbortSignal.timeout(40000),
     });
     if (!res.ok) return browserlessScreenshot(url);
     let b64 = (await res.text()).trim();

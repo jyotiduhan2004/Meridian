@@ -4,6 +4,7 @@ import { enrichInputs, detectLoginWall } from "@/lib/enrich";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // does live enrichment + login-wall probe against the target URL
 
 export async function POST(req: NextRequest) {
   const { text } = await req.json().catch(() => ({ text: "" }));

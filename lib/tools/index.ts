@@ -64,7 +64,8 @@ const stubTools: Tools = {
 
 // Memoize evidence fetches by URL/query for the process lifetime, caching the
 // Promise so the skills that fan out concurrently share a single fetch instead
-// of each hammering GitHub/Tavily. (Persisted to Supabase at deploy time.)
+// of each hammering GitHub/Tavily. In-process only — not persisted across
+// invocations (run state lives in the Supabase-backed store; this is just a cache).
 const g = globalThis as unknown as {
   __meridianEvidence?: {
     repo: Map<string, Promise<RepoRead>>;

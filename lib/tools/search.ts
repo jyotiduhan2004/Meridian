@@ -17,6 +17,7 @@ export async function tavilySearch(query: string): Promise<SearchResult[]> {
         max_results: 5,
         include_answer: false,
       }),
+      signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { results?: { title?: string; url?: string; content?: string }[] };

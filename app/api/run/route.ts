@@ -13,6 +13,7 @@ function urlIsDead(status: number): boolean {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // does a live preflight fetch + enrichment of the target URL
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));

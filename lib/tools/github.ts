@@ -69,7 +69,7 @@ function pickFiles(tree: GhTreeItem[]): string[] {
 
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
-    const res = await fetch(url, { headers: ghHeaders() });
+    const res = await fetch(url, { headers: ghHeaders(), signal: AbortSignal.timeout(12000) });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -81,6 +81,7 @@ async function fetchRaw(owner: string, repo: string, branch: string, path: strin
   try {
     const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`, {
       headers: { "User-Agent": "meridian-review" },
+      signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return null;
     return await res.text();
