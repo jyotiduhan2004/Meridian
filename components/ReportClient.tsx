@@ -103,15 +103,11 @@ export default function ReportClient({ id }: { id: string }) {
       if (started.current) return;
       started.current = true;
 
-      // Drive skills in up to 3 rounds, re-running any still pending/running so a
-      // transient skill hiccup can't strand the run without a score.
-      let current = data;
-      for (let round = 0; round < 3; round++) {
-        const pending = Object.values(current.skills)
-          .filter((s) => s.status === "pending" || s.status === "running")
-          .map((s) => s.skillId);
-        if (pending.length === 0) break;
-        await pool(pending, 2, async (sid) => {
+      // Run skills; retry only ones still PENDING (a transient POST failure). A skill stuck
+      // "running" was killed at the 60s function limit — re-running it just burns another
+      // 60s, so we leave it and let synthesis finalize without it.
+      try {
+        const runSkill = async (sid: string) => {
           try {
             const res = await fetch(`/api/run/${id}/skill/${sid}`, { method: "POST" });
             if (res.ok) {
@@ -122,26 +118,40 @@ export default function ReportClient({ id }: { id: string }) {
           } catch {
             /* retried next round */
           }
-        });
-        const rr = await fetch(`/api/run/${id}`, { cache: "no-store" });
-        if (rr.ok) current = await rr.json();
-      }
+        };
+        let current = data;
+        for (let round = 0; round < 2; round++) {
+          const pending = Object.values(current.skills)
+            .filter((s) => s.status === "pending")
+            .map((s) => s.skillId);
+          if (pending.length === 0) break;
+          await pool(pending, 2, runSkill);
+          const rr = await fetch(`/api/run/${id}`, { cache: "no-store" });
+          if (rr.ok) current = await rr.json();
+        }
 
-      // Synthesize once skills are settled. The route returns 202 while it's
-      // premature; retry so we never persist or show a stale 0.
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const sv = await fetch(`/api/run/${id}/synthesize`, { method: "POST" });
-        if (sv.ok) {
-          const v: Verdict = await sv.json();
-          setVerdict(v);
-          trackEvent("verdict_synthesized", { score: v.meridianScore, verdict: v.verdict });
-          break;
+        // Synthesize. The route 202s while skills are pending; retry briefly to let them
+        // settle, then FORCE so a stuck/killed skill can't block the verdict forever.
+        const synth = async (forceFinal: boolean) => {
+          const sv = await fetch(`/api/run/${id}/synthesize${forceFinal ? "?force=1" : ""}`, { method: "POST" });
+          if (sv.ok) {
+            const v: Verdict = await sv.json();
+            setVerdict(v);
+            trackEvent("verdict_synthesized", { score: v.meridianScore, verdict: v.verdict });
+            return true;
+          }
+          return sv.status === 202 ? null : false;
+        };
+        let settled = false;
+        for (let attempt = 0; attempt < 4 && !settled; attempt++) {
+          const res = await synth(false);
+          if (res === true) { settled = true; break; }
+          if (res === false) break;
+          await new Promise((r) => setTimeout(r, 1500));
         }
-        if (sv.status === 202) {
-          await new Promise((res) => setTimeout(res, 1500));
-          continue;
-        }
-        break;
+        if (!settled) await synth(true); // force-finalize with whatever finished
+      } catch {
+        /* never surface an analysis hiccup as a crashed page */
       }
     })();
   }, [id, setSkill]);
