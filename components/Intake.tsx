@@ -134,24 +134,35 @@ export default function Intake() {
       {!ex ? (
         <>
           {mode === "product" && (
-            <div className="mt-3">
-              <p className="mono mb-1.5 text-[11px] uppercase tracking-wider text-muted">or try a demo</p>
-              <div className="flex flex-wrap gap-1.5">
+            <div
+              className="mt-4 rounded-2xl border border-accent/40 bg-accent/[0.07] p-3.5"
+              style={{ boxShadow: "0 0 28px -12px var(--accent)" }}
+            >
+              <p className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <span
+                  aria-hidden
+                  className="inline-grid h-5 w-5 place-items-center rounded-full bg-accent text-[10px] text-background"
+                >
+                  ▶
+                </span>
+                No project handy? <span className="text-accent">Try a live demo — one click:</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
                 {EXAMPLES.map((d) => (
                   <button
                     key={d.label}
                     type="button"
                     onClick={() => setText(d.text)}
-                    className="pill flex cursor-pointer items-center gap-1.5 border border-border px-2.5 py-1 text-xs text-muted transition hover:scale-105 hover:border-accent hover:text-foreground"
+                    className="pill cursor-pointer border-2 border-accent/60 bg-accent/10 px-4 py-1.5 text-sm font-semibold text-accent transition hover:scale-105 hover:bg-accent hover:text-background"
+                    style={{ boxShadow: "0 0 16px -7px var(--accent)" }}
                   >
-                    <span aria-hidden className="text-accent">↳</span>
-                    <span className="mono">{d.label}</span>
+                    {d.label}
                   </button>
                 ))}
               </div>
-              <p className="mt-2.5 text-[11px] leading-relaxed text-muted">
-                <span className="text-accent">Judging this hackathon?</span> Paste any other submission — a
-                Devpost link, repo, or live URL — and Meridian reviews it in seconds.
+              <p className="mt-3 text-xs leading-relaxed text-muted">
+                <span className="font-semibold text-accent">Judging this hackathon?</span> Paste any other
+                submission — a Devpost link, repo, or live URL — and Meridian reviews it in seconds.
               </p>
             </div>
           )}
